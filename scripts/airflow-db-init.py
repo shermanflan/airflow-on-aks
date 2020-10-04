@@ -1,31 +1,29 @@
 import logging
+import json
+import os
 
-from airflow.configuration import conf
 from airflow.models import Connection
-from airflow.models.crypto import get_fernet
 from airflow.utils.db import provide_session
 
 logger = logging.getLogger(__name__)
 
 
 @provide_session
-def update_redis_db(key, session=None):
+def update_redis_db(params, session=None):
     db = (
-            session
-            .query(Connection)
-            .filter(Connection.conn_id == 'redis_default')
-            .first()
+        session
+        .query(Connection)
+        .filter(Connection.conn_id == 'redis_default')
+        .first()
     )
     
-    db.host = 'redis-kv'
-    db.is_encrypted = False
-    db.is_extra_encrypted = False
+    db.host = params['host']
     session.add(db)
     session.commit()
 
 
 @provide_session
-def update_postgres_db(key, session=None):
+def update_postgres_db(params, session=None):
     db = (
         session
         .query(Connection)
@@ -33,16 +31,16 @@ def update_postgres_db(key, session=None):
         .first()
     )
 
-    db.host = 'postgres-db'
-    db.login = 'sa'
-    db._password = key.encrypt(bytes('pwd', 'utf-8')).decode()
+    db.host = params['host']
+    db.login = params['login']
+    db.set_password(params['password'])
 
     session.add(db)
     session.commit()
 
 
 @provide_session
-def update_airflow_db(key, session=None):
+def update_airflow_db(params, session=None):
     db = (
         session
         .query(Connection)
@@ -50,24 +48,56 @@ def update_airflow_db(key, session=None):
         .first()
     )
 
-    db.conn_type = 'postgres'
-    db.host = 'postgres-db'
-    db.login = 'sa'
-    db._password = key.encrypt(bytes('pwd', 'utf-8')).decode()
+    db.conn_type = params['conn_type']
+    db.host = params['host']
+    db.login = params['login']
+    db.set_password(params['password'])
+
+    session.add(db)
+    session.commit()
+
+
+@provide_session
+def update_azure_aci(params, session=None):
+    db = (
+        session
+        .query(Connection)
+        .filter(Connection.conn_id == 'azure_container_instances_default')
+        .first()
+    )
+
+    db.conn_type = params['conn_type']
+    db.login = params['login']
+    db.set_password(params['password'])
+    db.extra = json.dumps({
+        "tenantId": params['tenantId'],
+        "subscriptionId": params['subscriptionId']
+    })
+
+    session.add(db)
+    session.commit()
+
+
+@provide_session
+def add_azure_registry(params, session=None):
+    db = Connection(**params)
 
     session.add(db)
     session.commit()
 
 
 if __name__ == "__main__":
-    # TODO: Read settings from YAML.
 
-    logger.debug(f'Encrypting with {conf.get("core", "FERNET_KEY")}...')
+    db_path = os.path.join(os.environ['AIRFLOW_HOME'],
+                           'scripts', 'config', 'connections.json')
 
-    key = get_fernet()
+    with open(db_path, 'r') as f:
+        db_config = json.load(f)
 
     logger.info('Updating db connections...')
 
-    update_redis_db(key)
-    update_postgres_db(key)
-    update_airflow_db(key)
+    update_redis_db(db_config['redis_default'])
+    update_postgres_db(db_config['postgres_default'])
+    update_airflow_db(db_config['airflow_db'])
+    update_azure_aci(db_config['azure_container_instances_default'])
+    add_azure_registry(db_config['azure_registry_default'])

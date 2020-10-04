@@ -5,5 +5,12 @@ Repo for running a local version of airflow for development purposes.
 
 - Use git repo sync for dags. See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
 - Use k8s executor.
-- Use Azure operators.
-- Use scaled out workers vi docker-compose.
+- Setup email subsystem.
+- Use [AzureContainerInstanceHook](https://github.com/apache/airflow/blob/v1-10-stable/airflow/contrib/hooks/azure_container_instance_hook.py)
+as a reference for implementing an Azure Functions scheduler.
+
+## Azure Authentication
+This uses a json key file for authentication. To generate:
+
+1. Use az cli to login
+2. Run: `ad sp create-for-rbac --sdk-auth > airflow.azureauth`

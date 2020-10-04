@@ -33,8 +33,8 @@ RUN pip install --no-cache-dir --user -r ${AIRFLOW_HOME}/dev-requirements.txt \
     && rm /${AIRFLOW_HOME}/dev-requirements.txt \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --chown=airflow:airflow scripts/* ${AIRFLOW_HOME}/
-RUN chmod a+x ${AIRFLOW_HOME}/*.py
-RUN chmod a+x ${AIRFLOW_HOME}/*.sh
+COPY --chown=airflow:airflow scripts ${AIRFLOW_HOME}/scripts
+RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.py
+RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.sh
 
-CMD ["bash", "./airflow-scheduler-start.sh"]
+CMD ["bash", "./scripts/airflow-scheduler-start.sh"]
