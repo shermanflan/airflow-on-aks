@@ -1,27 +1,33 @@
-#/bin/bash
+#!/bin/bash
+
+# Inspired by:
+# https://www.cloudwalker.io/2019/09/30/airflow-scale-out-with-redis-and-celery/
+# https://www.gradiant.org/en/blog/apache-airflow-docker-en/
 
 INIT_FILE=.airflowinitialized
 if [ ! -f $INIT_FILE ]; then
+    echo 'Bootstrapping Airflow...'
+
     airflow initdb
-    
-    # Bootstrap Airflow
-    python airflow-init.py
-    
-    # This configuration is done only the first time
-    touch $INIT_FILE
+
+    python airflow-db-init.py
+
+    touch $INIT_FILE  # run once only
 fi
 
-# Run the Airflow webserver and scheduler
+echo 'Run the Airflow webserver and scheduler...'
+
 airflow scheduler &
 airflow webserver &
 
-# Workers
-airflow worker -q cloudwalker_q1,cloudwalker_q2 --daemon
-airflow worker -q cloudwalker_q1,cloudwalker_q2 --daemon
-airflow worker -q cloudwalker_q1,cloudwalker_q2 --daemon
-airflow worker -q cloudwalker_q1,cloudwalker_q2 --daemon
+echo 'Run workers...'
 
-# Flower UI
+airflow worker -q airworker_q1,airworker_q2 --daemon
+airflow worker -q airworker_q1,airworker_q2 --daemon
+airflow worker -q airworker_q1,airworker_q2 --daemon
+airflow worker -q airworker_q1,airworker_q2 --daemon
+
+echo 'Start Flower UI...'
 airflow flower &
 
 wait

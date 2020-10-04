@@ -1,4 +1,4 @@
-#/bin/bash -eux
+#!/bin/bash -eux
 
 # TODO: Reset dags folder from git. Should probably be invoked from 
 # Dockerfile.

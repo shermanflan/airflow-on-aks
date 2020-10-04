@@ -1,3 +1,5 @@
-pytest
+apache-airflow==1.10.12
+cryptography==3.0
+redis
 
-# Shared libs
+# Custom libs

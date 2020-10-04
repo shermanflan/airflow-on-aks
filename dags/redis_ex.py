@@ -41,7 +41,8 @@ def set_redis(key, value):
     r.set(key, value)
 
 
-with DAG('redis_ex', default_args=default_args,
+with DAG('redis_ex', 
+    default_args=default_args,
     description='Example using redis api',
     schedule_interval=timedelta(days=1),
     start_date=days_ago(2),
@@ -57,13 +58,13 @@ with DAG('redis_ex', default_args=default_args,
             'key': 'my-airflow:rko',
             'value': f'test {datetime.now()}'
         },
-        queue='cloudwalker_q1'
+        queue='airworker_q1'
     )
 
     task2 = BashOperator(
         task_id= 'task_for_q2',
         bash_command='echo $hostname',
-        queue='cloudwalker_q2'
+        queue='airworker_q2'
     )
 
     run_this >> task2
