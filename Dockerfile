@@ -37,9 +37,4 @@ COPY --chown=airflow:airflow scripts/* ${AIRFLOW_HOME}/
 RUN chmod a+x ${AIRFLOW_HOME}/*.py
 RUN chmod a+x ${AIRFLOW_HOME}/*.sh
 
-#COPY --chown=airflow:airflow scripts/airflow-db-init.py ${AIRFLOW_HOME}/airflow-init.py
-#RUN chmod a+x ${AIRFLOW_HOME}/airflow-init.py
-#COPY --chown=airflow:airflow ./scripts/airflow-start.sh ${AIRFLOW_HOME}/airflow-start.sh
-#RUN chmod a+x ${AIRFLOW_HOME}/airflow-start.sh
-
-CMD ["bash", "./airflow-start.sh"]
+CMD ["bash", "./airflow-scheduler-start.sh"]

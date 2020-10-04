@@ -14,15 +14,12 @@ services:
         image: redis:6.0
         ports:
           - 6379:6379
-    airflow-dev:
-        image: airflow-dev
+    airflow-scheduler:
+        image: airflow-scheduler
         build:
             context: .
             dockerfile: Dockerfile
-        ports:
-            - 8080:8080
-            - 5555:5555
-        depends_on: 
+        depends_on:
             - postgres-db
             - redis-kv
         environment:
@@ -31,4 +28,23 @@ services:
             - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://sa:pwd@postgres-db/airflow
             - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://sa:pwd@postgres-db/airflow
         volumes:
+            - ~/personal/github/airflow-local/dags:/opt/airflow/dags
+    airflow-web:
+        image: apache/airflow:1.10.12
+        entrypoint: ./scripts/airflow-web-start.sh
+        ports:
+            - 8080:8080
+            - 5555:5555
+        restart: on-failure
+        depends_on:
+            - postgres-db
+            - redis-kv
+            - airflow-scheduler
+        environment:
+            - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+            - AIRFLOW__CELERY__BROKER_URL=redis://redis-kv:6379/0
+            - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://sa:pwd@postgres-db/airflow
+            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://sa:pwd@postgres-db/airflow
+        volumes:
+            - ~/personal/github/airflow-local/scripts:/opt/airflow/scripts
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags
