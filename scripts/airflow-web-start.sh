@@ -5,16 +5,20 @@
 # https://www.gradiant.org/en/blog/apache-airflow-docker-en/
 # https://towardsdatascience.com/apache-airflow-and-postgresql-with-docker-and-docker-compose-5651766dfa96
 
-echo 'Waiting for scheduler...'
+INIT_FILE=.airflowinitialized
 
-sleep 30
+if [ ! -f $INIT_FILE ]; then
+    echo 'One-time bootstrapping of Airflow db...'
+
+    airflow initdb
+
+    python "$AIRFLOW_HOME/scripts/airflow-db-init.py"
+
+    touch $INIT_FILE
+fi
 
 echo 'Starting Airflow webserver...'
 
 airflow webserver &
-
-echo 'Starting Flower UI...'
-
-airflow flower &
 
 wait

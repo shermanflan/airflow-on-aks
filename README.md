@@ -8,6 +8,7 @@ Repo for running a local version of airflow for development purposes.
 - Setup email subsystem.
 - Use [AzureContainerInstanceHook](https://github.com/apache/airflow/blob/v1-10-stable/airflow/contrib/hooks/azure_container_instance_hook.py)
 as a reference for implementing an Azure Functions scheduler.
+- Implement a Teams operator.
 
 ## Azure Authentication
 This uses a json key file for authentication. To generate:

@@ -41,12 +41,12 @@ def set_redis(key, value):
     r.set(key, value)
 
 
-with DAG('redis_ex', 
-    default_args=default_args,
-    description='Example using redis api',
-    schedule_interval=timedelta(days=1),
-    start_date=days_ago(2),
-    tags=['redis'],
+with DAG('redis_ex',
+         default_args=default_args,
+         description='Example using redis api',
+         schedule_interval=timedelta(days=1),
+         start_date=days_ago(2),
+         tags=['redis'],
 ) as dag:
 
     dag.doc_md = __doc__
