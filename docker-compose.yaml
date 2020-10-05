@@ -13,7 +13,11 @@ services:
     redis-kv:
         image: redis:6.0
         ports:
-          - 6379:6379
+            - 6379:6379
+    smtp-local:
+        image: namshi/smtp
+        ports:
+            - 25:25
     airflow-web:
         image: airflow-web
         build:
@@ -24,12 +28,16 @@ services:
         depends_on:
             - postgres-db
             - redis-kv
+            - smtp-local
         environment:
             - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
             - AIRFLOW__CELERY__BROKER_URL=redis://redis-kv:6379/0
             - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://sa:pwd@postgres-db/airflow
             - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://sa:pwd@postgres-db/airflow
             - AIRFLOW__CORE__FERNET_KEY=kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc=
+            - AIRFLOW__SMTP__SMTP_HOST=smtp-local
+            - AIRFLOW__SMTP__SMTP_STARTTLS=False
+#            - AIRFLOW_CONN_AA_PROD_DB=postgres://login:password@host:port/schema?param1=val1&param2=val2
         volumes:
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags
     airflow-scheduler:
@@ -47,7 +55,10 @@ services:
             - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://sa:pwd@postgres-db/airflow
             - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://sa:pwd@postgres-db/airflow
             - AIRFLOW__CORE__FERNET_KEY=kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc=
+            - AIRFLOW__SMTP__SMTP_HOST=smtp-local
+            - AIRFLOW__SMTP__SMTP_STARTTLS=False
             - AZURE_AUTH_LOCATION=/opt/airflow/scripts/azureauth.json
+#            - AIRFLOW_CONN_AA_PROD_DB=postgres://login:password@host:port/schema?param1=val1&param2=val2
         volumes:
             - ~/personal/github/airflow-local/scripts:/opt/airflow/scripts
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags

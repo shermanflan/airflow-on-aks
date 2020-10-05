@@ -5,7 +5,6 @@ Repo for running a local version of airflow for development purposes.
 
 - Use git repo sync for dags. See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
 - Use k8s executor.
-- Setup email subsystem.
 - Use [AzureContainerInstanceHook](https://github.com/apache/airflow/blob/v1-10-stable/airflow/contrib/hooks/azure_container_instance_hook.py)
 as a reference for implementing an Azure Functions scheduler.
 - Implement a Teams operator.

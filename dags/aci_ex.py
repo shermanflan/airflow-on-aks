@@ -38,18 +38,19 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 
+# TODO: Move configuration to variable?
 box2lake_path = os.path.join(os.environ['AIRFLOW_HOME'],
                              'dags', 'config', 'box2lake.json')
 with open(box2lake_path, 'r') as f:
     box2lake_config = json.load(f)
 
 with DAG('aci_ex',
-    default_args=default_args,
-    description='Example using Azure ACI operator',
-    schedule_interval="0 0 * * *",
-    start_date=datetime.now(),
-    tags=['azure', 'aci'],
-) as dag:
+         default_args=default_args,
+         description='Example using Azure ACI operator',
+         schedule_interval="0 0 * * *",
+         start_date=days_ago(1),
+         tags=['azure', 'aci'],
+         ) as dag:
 
     dag.doc_md = __doc__
 
@@ -60,7 +61,7 @@ with DAG('aci_ex',
         registry_conn_id='azure_registry_default',
         resource_group='airflow-sandbox',
         name='airflow-dev-box2lake',
-        image='x.azurecr.io/y:1.0',
+        image='bshcontainerregistry.azurecr.io/box2lake:1.0',
         region='East US',
         environment_variables=box2lake_config,
         memory_in_gb=1.5,

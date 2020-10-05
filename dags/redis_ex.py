@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.contrib.hooks.redis_hook import RedisHook
 from airflow.operators.bash_operator import BashOperator
+from airflow.operators.email_operator import EmailOperator
 from airflow.operators.python_operator import PythonOperator 
 from airflow.utils.dates import days_ago
 
@@ -14,7 +15,7 @@ default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
     'email': ['shermanflan@gmail.com'],
-    'email_on_failure': True,
+    'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
@@ -46,8 +47,8 @@ with DAG('redis_ex',
          description='Example using redis api',
          schedule_interval=timedelta(days=1),
          start_date=days_ago(2),
-         tags=['redis'],
-) as dag:
+         tags=['redis']
+         ) as dag:
 
     dag.doc_md = __doc__
 
@@ -67,5 +68,19 @@ with DAG('redis_ex',
         queue='airworker_q2'
     )
 
-    run_this >> task2
+    body = """
+        Log: <a href="{{ti.log_url}}">Link</a><br>
+        Host: {{ti.hostname}}<br>
+        Log file: {{ti.log_filepath}}<br>
+        Mark success: <a href="{{ti.mark_success_url}}">Link</a><br>
+    """
 
+    task3 = EmailOperator(
+        task_id= 'email_task',
+        to='shermanflan@gmail.com',
+        subject='Test from Airflow',
+        html_content=body,
+        queue='airworker_q2'
+    )
+
+    run_this >> task2 >> task3

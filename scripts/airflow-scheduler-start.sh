@@ -5,7 +5,7 @@
 # https://www.gradiant.org/en/blog/apache-airflow-docker-en/
 # https://towardsdatascience.com/apache-airflow-and-postgresql-with-docker-and-docker-compose-5651766dfa96
 
-echo 'Waiting for initdb...'
+echo 'Waiting for database initialization...'
 
 sleep 15
 

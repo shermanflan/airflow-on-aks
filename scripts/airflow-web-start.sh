@@ -11,7 +11,9 @@ if [ ! -f $INIT_FILE ]; then
     echo 'One-time bootstrapping of Airflow db...'
 
     airflow initdb
+#    airflow upgradedb  # recommended for prod
 
+    # TODO: Consider CLI command 'airflow connections'.
     python "$AIRFLOW_HOME/scripts/airflow-db-init.py"
 
     touch $INIT_FILE
