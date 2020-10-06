@@ -13,8 +13,13 @@ if [ ! -f $INIT_FILE ]; then
     airflow initdb
 #    airflow upgradedb  # recommended for prod
 
+    # Connections
     # TODO: Consider CLI command 'airflow connections'.
     python "$AIRFLOW_HOME/scripts/airflow-db-init.py"
+
+    echo 'Adding pools...'
+
+    airflow pool -s utility_pool 32 "For email, teams, etc."
 
     touch $INIT_FILE
 fi

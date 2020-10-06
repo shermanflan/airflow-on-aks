@@ -13,12 +13,9 @@ echo 'Running the Airflow scheduler...'
 
 airflow scheduler &
 
-echo 'Run workers...'
-
-airflow worker -q airworker_q1,airworker_q2 --daemon &
-airflow worker -q airworker_q1,airworker_q2 --daemon &
-airflow worker -q airworker_q1,airworker_q2 --daemon &
-airflow worker -q airworker_q1,airworker_q2 --daemon &
+# NOTE: Seems like 1 worker per host.
+#echo 'Running workers...'
+#airflow worker -q airworker_q1,airworker_q2 --daemon &
 
 echo 'Starting Flower UI...'
 

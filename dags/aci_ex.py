@@ -10,8 +10,7 @@ from airflow import DAG
 from airflow.contrib.operators.azure_container_instances_operator import (
     AzureContainerInstancesOperator
 )
-from airflow.operators.bash_operator import BashOperator
-from airflow.operators.python_operator import PythonOperator 
+from airflow.operators.email_operator import EmailOperator
 from airflow.utils.dates import days_ago
 
 default_args = {
@@ -54,17 +53,35 @@ with DAG('aci_ex',
 
     dag.doc_md = __doc__
 
-    run_this = AzureContainerInstancesOperator(
-        task_id='Start_Box_ACI',
-        queue='airworker_q1',
+    start_box_aci = AzureContainerInstancesOperator(
+        task_id='start_box_aci',
         ci_conn_id='azure_container_instances_default',
         registry_conn_id='azure_registry_default',
         resource_group='airflow-sandbox',
         name='airflow-dev-box2lake',
-        image='bshcontainerregistry.azurecr.io/box2lake:1.0',
+        image='x.azurecr.io/y:1.0',
         region='East US',
         environment_variables=box2lake_config,
         memory_in_gb=1.5,
         cpu=1.0,
+        queue='airworker_q1',
+        pool='default_pool'
     )
 
+    body = """
+        Log: <a href="{{ti.log_url}}">Link</a><br>
+        Host: {{ti.hostname}}<br>
+        Log file: {{ti.log_filepath}}<br>
+        Mark success: <a href="{{ti.mark_success_url}}">Link</a><br>
+    """
+
+    email_task = EmailOperator(
+        task_id= 'email_task',
+        to='shermanflan@gmail.com',
+        subject=f'{start_box_aci.task_id} completed successfully',
+        html_content=body,
+        queue='airworker_q2',
+        pool='utility_pool'
+    )
+
+    start_box_aci >> email_task

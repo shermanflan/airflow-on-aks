@@ -1,5 +1,5 @@
 """
-## redis_ex.py
+## redis_q2_ex.py
 Example using redis API.
 """
 from datetime import datetime, timedelta
@@ -19,7 +19,7 @@ default_args = {
     'email_on_retry': False,
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
-    # 'queue': 'bash_queue',
+    'queue': 'airworker_q1',
     # 'pool': 'backfill',
     # 'priority_weight': 10,
     # 'end_date': datetime(2016, 1, 1),
@@ -35,14 +35,23 @@ default_args = {
 }
 
 
-def set_redis(key, value):
+def set_redis(key, value, **context):
     redis_hook = RedisHook(redis_conn_id='redis_default')
 
     r = redis_hook.get_conn()
     r.set(key, value)
 
+    context['ti'].xcom_push('redis-test', value)
 
-with DAG('redis_ex',
+
+def get_redis(key, **context):
+    redis_hook = RedisHook(redis_conn_id='redis_default')
+
+    r = redis_hook.get_conn()
+    return r.get(key)
+
+
+with DAG('redis_q1_ex',
          default_args=default_args,
          description='Example using redis api',
          schedule_interval=timedelta(days=1),
@@ -52,20 +61,31 @@ with DAG('redis_ex',
 
     dag.doc_md = __doc__
 
-    run_this = PythonOperator(
-        task_id='Write_Key',
+    write_kv = PythonOperator(
+        task_id='write_kv',
         python_callable=set_redis,
         op_kwargs={
             'key': 'my-airflow:rko',
             'value': f'test {datetime.now()}'
         },
+        provide_context=True,
         queue='airworker_q1'
     )
 
-    task2 = BashOperator(
+    task_for_q = BashOperator(
         task_id= 'task_for_q2',
         bash_command='echo $hostname',
-        queue='airworker_q2'
+        queue='airworker_q1'
+    )
+
+    read_kv = PythonOperator(
+        task_id='read_kv',
+        python_callable=get_redis,
+        op_kwargs={
+            'key': 'my-airflow:rko',
+        },
+        provide_context=True,
+        queue='airworker_q1'
     )
 
     body = """
@@ -75,12 +95,13 @@ with DAG('redis_ex',
         Mark success: <a href="{{ti.mark_success_url}}">Link</a><br>
     """
 
-    task3 = EmailOperator(
+    email_task = EmailOperator(
         task_id= 'email_task',
         to='shermanflan@gmail.com',
-        subject='Test from Airflow',
+        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}",
         html_content=body,
-        queue='airworker_q2'
+        pool='utility_pool',
+        queue='airworker_q1'
     )
 
-    run_this >> task2 >> task3
+    write_kv >> [task_for_q, read_kv] >> email_task
