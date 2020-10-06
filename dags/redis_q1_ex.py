@@ -8,12 +8,14 @@ from airflow import DAG
 from airflow.contrib.hooks.redis_hook import RedisHook
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.email_operator import EmailOperator
-from airflow.operators.python_operator import PythonOperator 
+from airflow.operators.python_operator import (
+    BranchPythonOperator, PythonOperator
+)
 from airflow.utils.dates import days_ago
 
 default_args = {
     'owner': 'airflow',
-    'depends_on_past': False,
+    'depends_on_past': False,  # depends on previous run status
     'email': ['shermanflan@gmail.com'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -31,8 +33,18 @@ default_args = {
     # 'on_success_callback': some_other_function,
     # 'on_retry_callback': another_function,
     # 'sla_miss_callback': yet_another_function,
-    # 'trigger_rule': 'all_success'
+    # 'trigger_rule': 'all_success'  # precedence constraint
 }
+
+
+def branch_func(**context):
+    ti = context['ti']
+    xcom_value = bool(ti.xcom_pull(task_ids='write_kv',
+                                   key='redis-branch-test'))
+    if xcom_value:
+        return 'email_task_1'
+    else:
+        return 'email_task_2'
 
 
 def set_redis(key, value, **context):
@@ -42,6 +54,7 @@ def set_redis(key, value, **context):
     r.set(key, value)
 
     context['ti'].xcom_push('redis-test', value)
+    context['ti'].xcom_push('redis-branch-test', True)
 
 
 def get_redis(key, **context):
@@ -54,7 +67,7 @@ def get_redis(key, **context):
 with DAG('redis_q1_ex',
          default_args=default_args,
          description='Example using redis api',
-         schedule_interval=timedelta(days=1),
+         schedule_interval="@once",
          start_date=days_ago(2),
          tags=['redis']
          ) as dag:
@@ -68,14 +81,12 @@ with DAG('redis_q1_ex',
             'key': 'my-airflow:rko',
             'value': f'test {datetime.now()}'
         },
-        provide_context=True,
-        queue='airworker_q1'
+        provide_context=True
     )
 
     task_for_q = BashOperator(
         task_id= 'task_for_q2',
-        bash_command='echo $hostname',
-        queue='airworker_q1'
+        bash_command='echo $hostname'
     )
 
     read_kv = PythonOperator(
@@ -84,24 +95,38 @@ with DAG('redis_q1_ex',
         op_kwargs={
             'key': 'my-airflow:rko',
         },
-        provide_context=True,
-        queue='airworker_q1'
+        provide_context=True
     )
+
+    # Implement conditional branching.
+    branch_task = BranchPythonOperator(
+        task_id='branch_task',
+        provide_context=True,
+        python_callable=branch_func)
 
     body = """
         Log: <a href="{{ti.log_url}}">Link</a><br>
         Host: {{ti.hostname}}<br>
         Log file: {{ti.log_filepath}}<br>
         Mark success: <a href="{{ti.mark_success_url}}">Link</a><br>
+        Follower branch: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}<br>
     """
 
-    email_task = EmailOperator(
-        task_id= 'email_task',
+    email_task_1 = EmailOperator(
+        task_id= 'email_task_1',
         to='shermanflan@gmail.com',
         subject="Test from Airflow: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}",
         html_content=body,
-        pool='utility_pool',
-        queue='airworker_q1'
+        pool='utility_pool'
     )
 
-    write_kv >> [task_for_q, read_kv] >> email_task
+    email_task_2 = EmailOperator(
+        task_id= 'email_task_2',
+        to='shermanflan@gmail.com',
+        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}",
+        html_content=body,
+        pool='utility_pool'
+    )
+
+    write_kv >> [task_for_q, read_kv] >> branch_task
+    branch_task >> [email_task_1, email_task_2]
