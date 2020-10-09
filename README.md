@@ -19,6 +19,9 @@ as the approach for extending airflow.
 - May need to enable [SSL](https://airflow.readthedocs.io/en/1.10.12/security.html#ssl).
 - Use [Flask-Mail](https://pypi.org/project/Flask-Mail/) for sending email
 in local mode.
+- Add a [reverse proxy](https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/)
+    - [nginx](https://www.nginx.com/)
+    - Azure options
 
 ## Azure Authentication for Web UI
 This is based on the OAuth2 authorization code flow facilitated by 
