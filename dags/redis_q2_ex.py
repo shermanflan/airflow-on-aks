@@ -20,6 +20,7 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
     'queue': 'airworker_q2',
+    # 'catchup': False
     # 'pool': 'backfill',
     # 'priority_weight': 10,
     # 'end_date': datetime(2016, 1, 1),
@@ -54,7 +55,7 @@ def get_redis(key, **context):
 with DAG('redis_q2_ex',
          default_args=default_args,
          description='Example using redis api',
-         schedule_interval=timedelta(days=1),
+         schedule_interval=timedelta(days=1),  # "0 0 * * *" or "@daily"
          start_date=days_ago(2),
          tags=['redis']
          ) as dag:

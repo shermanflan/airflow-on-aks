@@ -2,28 +2,12 @@ FROM apache/airflow:1.10.12
 
 USER root
 
-# ENV APP_HOME /opt/graph_service
-# RUN  useradd -ms /bin/bash -r -d ${APP_HOME} graph_service
-
-# For MSSQL ODBC driver
-# ENV ACCEPT_EULA=Y
-# ENV OS_VERSION=19.10
-
-# RUN buildDeps='curl software-properties-common build-essential' \
-#     && set -x \
-#     && apt-get update \
-#     && apt-get install -y $buildDeps \
-#     && apt-get update \
-#     && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-#     && curl https://packages.microsoft.com/config/ubuntu/${OS_VERSION}/prod.list > /etc/apt/sources.list.d/mssql-release.list \
-#     && apt-get update \
-#     && apt-get install -y \
-#         msodbcsql17 \
-#         unixodbc-dev \
-#         python3-pip \
-#     && apt-get purge -y --auto-remove $buildDeps \
-#     && apt-get clean \
-#     && rm -rf /var/lib/apt/lists/*
+# TODO: Load security module w/o git.
+RUN apt-get update \
+    && apt-get install -y git \
+    && apt-get purge -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 USER airflow
 
@@ -36,5 +20,8 @@ RUN pip install --no-cache-dir --user -r ${AIRFLOW_HOME}/dev-requirements.txt \
 COPY --chown=airflow:airflow scripts ${AIRFLOW_HOME}/scripts
 RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.py
 RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.sh
+
+COPY --chown=airflow:airflow webserver_config.py ${AIRFLOW_HOME}/webserver_config.py
+RUN chmod a+x ${AIRFLOW_HOME}/webserver_config.py
 
 CMD ["bash", "./scripts/airflow-web-start.sh"]

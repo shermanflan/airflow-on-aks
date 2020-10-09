@@ -22,7 +22,7 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
     'catchup': False
-    # 'queue': 'bash_queue',
+    # 'queue': 'airworker_q1',
     # 'pool': 'backfill',
     # 'priority_weight': 10,
     # 'end_date': datetime(2016, 1, 1),

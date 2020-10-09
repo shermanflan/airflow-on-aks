@@ -86,6 +86,21 @@ def add_azure_registry(params, session=None):
     session.commit()
 
 
+@provide_session
+def add_default_user(session=None):
+    from airflow import models
+    from airflow.contrib.auth.backends.password_auth import PasswordUser
+
+    user = PasswordUser(models.User())
+    user.username = 'shermanflan'
+    user.email = 'shermanflan@gmail.com'
+    user.password = 'pwd'
+    user.superuser = True
+
+    session.add(user)
+    session.commit()
+
+
 if __name__ == "__main__":
 
     db_path = os.path.join(os.environ['AIRFLOW_HOME'],
@@ -101,3 +116,8 @@ if __name__ == "__main__":
     update_airflow_db(db_config['airflow_db'])
     update_azure_aci(db_config['azure_container_instances_default'])
     add_azure_registry(db_config['azure_registry_default'])
+
+    # if bool(os.environ.get('AIRFLOW__WEBSERVER__AUTHENTICATE', False)) \
+    #         and not bool(os.environ.get('AIRFLOW__WEBSERVER__RBAC', False)):
+    #     logger.info('Adding default user...')
+    #     add_default_user()

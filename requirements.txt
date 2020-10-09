@@ -1,5 +1,10 @@
 apache-airflow==1.10.12
+#Authlib  # for oauth2
+Flask-OAuthlib
 cryptography==3.0
+flask-bcrypt  # for web auth
 redis
 
 # Custom libs
+# Rename repo to match lib
+#git+https://github.com/shermanflan/AzureSecurityManager.git

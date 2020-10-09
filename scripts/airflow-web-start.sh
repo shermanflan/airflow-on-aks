@@ -7,7 +7,9 @@
 
 INIT_FILE=.airflowinitialized
 
-if [ ! -f $INIT_FILE ]; then
+if [ ! -f $INIT_FILE ]
+  then
+
     echo 'One-time bootstrapping of Airflow db...'
 
     airflow initdb
@@ -21,11 +23,52 @@ if [ ! -f $INIT_FILE ]; then
 
     airflow pool -s utility_pool 32 "For email, teams, etc."
 
+    if [ "$AIRFLOW__WEBSERVER__RBAC" == "True" ]
+      then
+
+        echo 'Adding admin user for RBAC...'
+
+        airflow create_user \
+          --role="Admin" \
+          --username="condesa.1931_hotmail.com#EXT#@condesa1931hotmail.onmicrosoft.com" \
+          --email="condesa.1931@hotmail.com" \
+          --firstname="Ricardo" \
+          --lastname="Guzman" \
+          --password="pwd"
+
+        airflow create_user \
+          --role="Admin" \
+          --username="ricardo.guzman@brightspringhealth.com" \
+          --email="ricardo.guzman@brightspringhealth.com" \
+          --firstname="Ricardo" \
+          --lastname="Guzman" \
+          --password="pwd"
+
+    fi
+
     touch $INIT_FILE
 fi
 
 echo 'Starting Airflow webserver...'
 
 airflow webserver &
+
+#echo 'Removing navbar color'
+#
+#sed --expression '/^navbar_color/s/^/#/' \
+#  --in-place $AIRFLOW_HOME/airflow.cfg
+
+echo 'Running the Airflow scheduler...'
+
+airflow scheduler &
+
+#echo 'Running workers...'
+# NOTE: Seems like only 1 worker per host works.
+airflow worker -q airworker_q1,airworker_q2 -cn worker_local --daemon &
+
+echo 'Starting Flower UI...'
+
+# TODO: basic auth: " --basic_auth=user1:password1,user2:password2"
+airflow flower &
 
 wait

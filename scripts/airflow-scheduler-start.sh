@@ -15,10 +15,11 @@ airflow scheduler &
 
 #echo 'Running workers...'
 # NOTE: Seems like only 1 worker per host works.
-#airflow worker -q airworker_q1,airworker_q2 -cn worker_local --daemon &
+airflow worker -q airworker_q1,airworker_q2 -cn worker_local --daemon &
 
 echo 'Starting Flower UI...'
 
+# TODO: basic auth: " --basic_auth=user1:password1,user2:password2"
 airflow flower &
 
 wait
