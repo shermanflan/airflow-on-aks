@@ -54,40 +54,19 @@ AUTH_USER_REGISTRATION = True
 # The default user self registration role
 AUTH_USER_REGISTRATION_ROLE = "Admin"
 
-# When using OAuth Auth, uncomment to setup provider(s) info
-# Google OAuth example:
-# OAUTH_PROVIDERS = [{
-#   'name':'google',
-#     'token_key':'access_token',
-#     'icon':'fa-google',
-#         'remote_app': {
-#             'base_url':'https://www.googleapis.com/oauth2/v2/',
-#             'request_token_params':{
-#                 'scope': 'email profile'
-#             },
-#             'access_token_url':'https://accounts.google.com/o/oauth2/token',
-#             'authorize_url':'https://accounts.google.com/o/oauth2/auth',
-#             'request_token_url': None,
-#             'consumer_key': CONSUMER_KEY,
-#             'consumer_secret': SECRET_KEY,
-#         }
-# }]
+azure_authority = f"https://login.microsoftonline.com/{0}/oauth2".format(
+    os.environ.get("AZURE_TENANT_ID")
+)
 
-AZURE_TENANT_ID = os.environ.get("AZURE_TENANT_ID")
-oauth_endpoint = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2"
-
-# TODO: Try latest airflow 2.0
-# TODO: Try github provider.
 OAUTH_PROVIDERS = [
     {
-        # NOTE: Personal hotmail accounts cause issues reading JWT as per MS
         "name": "azure",
         "icon": "fa-windows",
         "token_key": "access_token",
         "remote_app": {
             "consumer_key": os.environ.get("AZURE_APP_ID"),
             "consumer_secret": os.environ.get("AZURE_APP_KEY"),
-            "base_url": oauth_endpoint,
+            "base_url": azure_authority,
             "request_token_params": {
                 # NOTE: Adding offline_access or openid seems unnecessary
                 "scope": "email profile",  # minimal
@@ -95,8 +74,8 @@ OAUTH_PROVIDERS = [
                 "resource": os.environ.get("AZURE_APP_ID"),
             },
             "request_token_url": None,
-            "access_token_url": oauth_endpoint + "/token",
-            "authorize_url": oauth_endpoint + "/authorize",
+            "access_token_url": azure_authority + "/token",
+            "authorize_url": azure_authority + "/authorize",
         }
     }
 ]

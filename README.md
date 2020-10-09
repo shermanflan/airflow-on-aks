@@ -22,6 +22,7 @@ in local mode.
 - Add a [reverse proxy](https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/)
     - [nginx](https://www.nginx.com/)
     - Azure options
+- Create an airflow2 version
 
 ## Azure Authentication for Web UI
 This is based on the OAuth2 authorization code flow facilitated by 
