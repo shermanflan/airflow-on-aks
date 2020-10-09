@@ -21,9 +21,10 @@ as the approach for extending airflow.
 in local mode.
 
 ## Azure Authentication for Web UI
-This is based on OAuth2 authorization code flow facilitated by 
-Flask-AppBuilder. In order for the OAuth2 flow to work, a application
-registration is required with the following properties.
+This is based on the OAuth2 authorization code flow facilitated by 
+Flask-AppBuilder. In order for the OAuth2 flow to work, an application
+registration is required with the following properties (all other properties
+can be left as per defaults).
 
 - API permissions: User.Read (Delegated)
 - Redirect URIs should include (port is ignored by Azure):
