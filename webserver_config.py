@@ -54,7 +54,7 @@ AUTH_USER_REGISTRATION = True
 # The default user self registration role
 AUTH_USER_REGISTRATION_ROLE = "Admin"
 
-azure_authority = f"https://login.microsoftonline.com/{0}/oauth2".format(
+azure_authority = "https://login.microsoftonline.com/{0}/oauth2".format(
     os.environ.get("AZURE_TENANT_ID")
 )
 
