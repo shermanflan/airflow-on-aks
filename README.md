@@ -13,19 +13,34 @@ See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflo
 [AzureContainerInstanceHook](https://github.com/apache/airflow/blob/v1-10-stable/airflow/contrib/hooks/azure_container_instance_hook.py)
 as a reference for implementing an Azure Functions scheduler.
 - Implement a Teams operator.
-- Add Azure OAuth2.
 - Use [`DebugExecutor`](https://airflow.readthedocs.io/en/1.10.12/executor/debug.html) to debug DAG in IDE.
-- Consider making all docker compose airflow services 
-[homogeneous](https://airflow.readthedocs.io/en/1.10.12/executor/celery.html).
 - Consider [plugins](https://airflow.readthedocs.io/en/1.10.12/plugins.html)
 as the approach for extending airflow.
 - May need to enable [SSL](https://airflow.readthedocs.io/en/1.10.12/security.html#ssl).
-- Use .env in docker-compose.yml
 - Use [Flask-Mail](https://pypi.org/project/Flask-Mail/) for sending email
 in local mode.
 
-## Azure Authentication
-This uses a json key file for authentication. To generate:
+## Azure Authentication for Web UI
+This is based on OAuth2 authorization code flow facilitated by 
+Flask-AppBuilder. In order for the OAuth2 flow to work, a application
+registration is required with the following properties.
+
+- API permissions: User.Read (Delegated)
+- Redirect URIs should include (port is ignored by Azure):
+    - http://[your airflow URI]/oauth-authorized/azure
+
+Per Microsoft [guidelines](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow), 
+the following should be kept in mind.
+
+- Redirect URI may need to be https for non-localhost URIs
+- For development, use http://127.0.0.1 instead of localhost
+- Upon successful authentication, the Azure `user.id` field is mapped to 
+the `username` field in `ab_user`
+- Using personal hotmail accounts can cause issues reading JWT (see [oauthlib](https://github.com/oauthlib/oauthlib/blob/v2.1.0/oauthlib/oauth2/rfc6749/clients/web_application.py#L17))
+
+## Azure Authentication for Operators
+A json key file has been created for authentication. This enables native
+Azure operators to connect to the tenant. To generate:
 
 1. Use az cli to login
 2. Run: `ad sp create-for-rbac --sdk-auth > airflow.azureauth`

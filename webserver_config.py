@@ -20,21 +20,17 @@
 import os
 
 from airflow.configuration import conf
-# from flask_appbuilder.security.manager import (
-#     AUTH_LDAP, AUTH_OID, AUTH_REMOTE_USER
-# )
-from flask_appbuilder.security.manager import AUTH_DB
-from flask_appbuilder.security.manager import AUTH_OAUTH
+from flask_appbuilder.security.manager import AUTH_DB, AUTH_OAUTH
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-SECRET_KEY = "acUmM5-5_fsO1eM828BNsDLQaoFw3NUnE3YVjNIM584="  # needed for CSRF?
+SECRET_KEY = "acUmM5-5_fsO1eM828BNsDLQaoFw3NUnE3YVjNIM584="  # for CSRF?
 
 # The SQLAlchemy connection string.
 SQLALCHEMY_DATABASE_URI = conf.get('core', 'SQL_ALCHEMY_CONN')
 
 # Flask-WTF flag for cross-site request forgery
-WTF_CSRF_ENABLED = False
+WTF_CSRF_ENABLED = True
 
 # ----------------------------------------------------
 # AUTHENTICATION CONFIG
@@ -56,9 +52,8 @@ AUTH_TYPE = AUTH_OAUTH  #AUTH_DB
 AUTH_USER_REGISTRATION = True
 
 # The default user self registration role
-AUTH_USER_REGISTRATION_ROLE = "Public"
+AUTH_USER_REGISTRATION_ROLE = "Admin"
 
-# TODO: Try latest airflow 1.10.test, 2.0
 # When using OAuth Auth, uncomment to setup provider(s) info
 # Google OAuth example:
 # OAUTH_PROVIDERS = [{
@@ -78,31 +73,26 @@ AUTH_USER_REGISTRATION_ROLE = "Public"
 #         }
 # }]
 
-# TODO: Use fiddler/chrome tools to view oauth messages.
-# TODO: Try testing with a non-hotmail account.
-# TODO: Try github provider.
-# TODO: Redirect URI may need to be https!
-# TODO: Try http://127.0.0.1 instead of localhost.
 AZURE_TENANT_ID = os.environ.get("AZURE_TENANT_ID")
 oauth_endpoint = f"https://login.microsoftonline.com/{AZURE_TENANT_ID}/oauth2"
 
+# TODO: Try latest airflow 2.0
+# TODO: Try github provider.
 OAUTH_PROVIDERS = [
     {
+        # NOTE: Personal hotmail accounts cause issues reading JWT as per MS
         "name": "azure",
         "icon": "fa-windows",
         "token_key": "access_token",
         "remote_app": {
-            "consumer_key": os.environ.get("AZURE_APPLICATION_ID"),
-            "consumer_secret": os.environ.get("AZURE_SECRET"),
+            "consumer_key": os.environ.get("AZURE_APP_ID"),
+            "consumer_secret": os.environ.get("AZURE_APP_KEY"),
             "base_url": oauth_endpoint,
             "request_token_params": {
-                # NOTE: Tried + "openid" but no dice
-                # NOTE: Tried - "name" "preferred_username but no dice
-                # NOTE: Tired adding a '+' separator but no dice
-                # NOTE: Changed "User.read" to lower case but no dice
-                # NOTE: Added offline_access but no dice
-                "scope": "user.read email openid offline_access profile",
-                "resource": os.environ.get("AZURE_APPLICATION_ID"),
+                # NOTE: Adding offline_access or openid seems unnecessary
+                "scope": "email profile",  # minimal
+                # "scope": "User.read name preferred_username email profile",
+                "resource": os.environ.get("AZURE_APP_ID"),
             },
             "request_token_url": None,
             "access_token_url": oauth_endpoint + "/token",
@@ -110,9 +100,6 @@ OAUTH_PROVIDERS = [
         }
     }
 ]
-
-# FAB_SECURITY_MANAGER_CLASS = "fab_azure.AzureSecurityManager"
-# SECURITY_MANAGER_CLASS = "AzureSecurityManager"  # airflow 2.0 AirflowSecurityManager
 
 # ----------------------------------------------------
 # Theme CONFIG
@@ -125,7 +112,7 @@ OAUTH_PROVIDERS = [
 # in order to fully utilize the theme. (or use that property in conjunction with theme)
 # APP_THEME = "bootstrap-theme.css"  # default bootstrap
 # APP_THEME = "amelia.css"
-# APP_THEME = "cerulean.css" # dev or prod
+APP_THEME = "cerulean.css" # use to distinguish from prod
 # APP_THEME = "cosmo.css"
 # APP_THEME = "cyborg.css"
 # APP_THEME = "darkly.css"
