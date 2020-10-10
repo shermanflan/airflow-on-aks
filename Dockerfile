@@ -3,11 +3,11 @@ FROM apache/airflow:1.10.12
 USER root
 
 # TODO: Load security module w/o git.
-RUN apt-get update \
-    && apt-get install -y git \
-    && apt-get purge -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+#RUN apt-get update \
+#    && apt-get install -y git \
+#    && apt-get purge -y \
+#    && apt-get clean \
+#    && rm -rf /var/lib/apt/lists/*
 
 USER airflow
 
@@ -24,4 +24,4 @@ RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.sh
 COPY --chown=airflow:airflow webserver_config.py ${AIRFLOW_HOME}/webserver_config.py
 RUN chmod a+x ${AIRFLOW_HOME}/webserver_config.py
 
-CMD ["bash", "./scripts/airflow-web-start.sh"]
+CMD ["bash", "./scripts/airflow-all-start.sh"]

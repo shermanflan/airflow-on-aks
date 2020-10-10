@@ -1,0 +1,62 @@
+version: "3.8"
+services:
+    postgres-db:
+        image: postgres:13
+        ports:
+            - "5432:5432"
+        environment:
+            - POSTGRES_USER=sa
+            - POSTGRES_PASSWORD=pwd
+            - POSTGRES_DB=airflow
+        deploy:
+            resources:
+                limits:
+                    cpus: '1'
+                    memory: 6G
+    redis-kv:
+        image: redis:6.0
+        ports:
+            - 6379:6379
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.5'
+                    memory: 2G
+    smtp-local:
+        image: namshi/smtp
+        ports:
+            - 25:25
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.50'
+                    memory: 0.2G
+    airflow-web-azure:
+        image: rkocontainerregistry.azurecr.io/azure-airflow:1.10.12
+        entrypoint: ./scripts/airflow-all-start.sh
+        ports:
+            - 8080:8080
+            - 5555:5555
+        depends_on:
+            - postgres-db
+            - redis-kv
+            - smtp-local
+        env_file: .env
+        # Overrides
+        environment:
+            - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+            - AIRFLOW__WEBSERVER__AUTHENTICATE=False
+            - AIRFLOW__WEBSERVER__RBAC=False
+        volumes:
+            - dags:/opt/airflow/dags
+        deploy:
+            resources:
+                limits:
+                    cpus: '1'
+                    memory: 6G
+volumes:
+    dags:
+        driver: azure_file
+        driver_opts:
+            share_name: airflow
+            storage_account_name: airflowstoragesandbox
