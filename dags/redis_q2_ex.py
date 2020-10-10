@@ -19,7 +19,7 @@ default_args = {
     'email_on_retry': False,
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
-    'queue': 'airworker_q2',
+    'queue': 'airq2',
     # 'catchup': False
     # 'pool': 'backfill',
     # 'priority_weight': 10,
@@ -70,13 +70,11 @@ with DAG('redis_q2_ex',
             'value': f'test {datetime.now()}'
         },
         provide_context=True,
-        queue='airworker_q2'
     )
 
     task_for_q = BashOperator(
         task_id= 'task_for_q2',
         bash_command='echo $hostname',
-        queue='airworker_q2'
     )
 
     read_kv = PythonOperator(
@@ -86,7 +84,6 @@ with DAG('redis_q2_ex',
             'key': 'my-airflow:rko',
         },
         provide_context=True,
-        queue='airworker_q2'
     )
 
     body = """
@@ -102,7 +99,6 @@ with DAG('redis_q2_ex',
         subject="Test from Airflow: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}",
         html_content=body,
         pool='utility_pool',
-        queue='airworker_q2'
     )
 
     write_kv >> [task_for_q, read_kv] >> email_task

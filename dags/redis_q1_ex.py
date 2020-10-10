@@ -21,7 +21,7 @@ default_args = {
     'email_on_retry': False,
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
-    'queue': 'airworker_q1',
+    'queue': 'airq1',
     # 'catchup': False
     # 'pool': 'backfill',
     # 'priority_weight': 10,

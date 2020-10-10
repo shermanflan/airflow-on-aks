@@ -26,7 +26,15 @@ if [ ! -f $INIT_FILE ]
 #    if [ "$AIRFLOW__WEBSERVER__RBAC" == "True" ]
 #      then
 #
-#        echo 'Adding admin users for RBAC...'
+#        echo 'Adding admin user for RBAC...'
+#
+#        airflow create_user \
+#          --role="Admin" \
+#          --username="condesa.1931_hotmail.com#EXT#@condesa1931hotmail.onmicrosoft.com" \
+#          --email="condesa.1931@hotmail.com" \
+#          --firstname="Ricardo" \
+#          --lastname="Guzman" \
+#          --password="pwd"
 #
 #        airflow create_user \
 #          --role="Admin" \
@@ -44,5 +52,17 @@ fi
 echo 'Starting Airflow webserver...'
 
 airflow webserver &
+
+echo 'Running the Airflow scheduler...'
+
+airflow scheduler &
+
+echo 'Running workers...'
+
+airflow worker -q airq1,airq2 -cn airworker0 --daemon & # 1 worker per host works
+
+echo 'Starting Flower UI...'
+
+airflow flower & # Add --basic_auth=user1:password1,user2:password2"
 
 wait

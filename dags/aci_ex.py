@@ -22,7 +22,7 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
     'catchup': False
-    # 'queue': 'airworker_q1',
+    # 'queue': 'airq1',
     # 'pool': 'backfill',
     # 'priority_weight': 10,
     # 'end_date': datetime(2016, 1, 1),
@@ -64,7 +64,7 @@ with DAG('aci_ex',
         environment_variables=box2lake_config,
         memory_in_gb=1.5,
         cpu=1.0,
-        queue='airworker_q1',
+        queue='airq1',
         pool='default_pool'
     )
 
@@ -80,7 +80,7 @@ with DAG('aci_ex',
         to='shermanflan@gmail.com',
         subject=f'{start_box_aci.task_id} completed successfully',
         html_content=body,
-        queue='airworker_q2',
+        queue='airq2',
         pool='utility_pool'
     )
 

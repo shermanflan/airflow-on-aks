@@ -20,6 +20,9 @@ services:
             - 25:25
     airflow-web:
         image: airflow-web
+        entrypoint: ./scripts/airflow-web-start.sh
+#        entrypoint: ./scripts/airflow-all-start.sh
+#        command: ['bash', './scripts/airflow-all-start.sh']
         build:
             context: .
             dockerfile: Dockerfile
@@ -33,15 +36,18 @@ services:
         env_file: .env
         # Overrides
         environment:
-            - AZURE_TENANT_ID=
-            - AZURE_APP_ID=
-            - AZURE_APP_KEY=
             - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+#            - AIRFLOW__WEBSERVER__AUTHENTICATE=False
+#            - AIRFLOW__WEBSERVER__RBAC=False
+#            - AIRFLOW__WEBSERVER__AUTH_BACKEND=airflow.api.auth.backend.deny_all
         volumes:
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags
     airflow-scheduler:
         image: apache/airflow:1.10.12
         entrypoint: ./scripts/airflow-scheduler-start.sh
+        build:
+            context: .
+            dockerfile: Dockerfile
         ports:
             - 5555:5555
         depends_on:
@@ -53,11 +59,10 @@ services:
         environment:
             - AIRFLOW__CORE__LOGGING_LEVEL=INFO
         volumes:
-            - ~/personal/github/airflow-local/scripts:/opt/airflow/scripts
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags
     airflow-worker-1:
         image: apache/airflow:1.10.12
-        entrypoint: ["airflow", "worker", "-q", "airworker_q1", "-cn", "worker-1"]
+        entrypoint: ["airflow", "worker", "-q", "airq1", "-cn", "airworker1"]
         depends_on:
             - postgres-db
             - redis-kv
@@ -68,11 +73,10 @@ services:
         environment:
             - AIRFLOW__CORE__LOGGING_LEVEL=INFO
         volumes:
-            - ~/personal/github/airflow-local/scripts:/opt/airflow/scripts
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags
     airflow-worker-2:
         image: apache/airflow:1.10.12
-        entrypoint: ["airflow", "worker", "-q", "airworker_q2", "-cn", "worker-2"]
+        entrypoint: ["airflow", "worker", "-q", "airq2", "-cn", "airworker2"]
         depends_on:
             - postgres-db
             - redis-kv
@@ -83,5 +87,4 @@ services:
         environment:
             - AIRFLOW__CORE__LOGGING_LEVEL=INFO
         volumes:
-            - ~/personal/github/airflow-local/scripts:/opt/airflow/scripts
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags
