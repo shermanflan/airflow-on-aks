@@ -20,14 +20,31 @@ as the approach for extending airflow.
     - Azure options
 - Create an airflow2 version
 
+## Docker Compose
+Multiple `docker-compose.yaml` configurations have been created for different
+use-cases.
+
+- Local development (default): LocalExecutor, single host
+    - `docker-compose.yaml`
+- Production template: CeleryExecutor, postgres/redis backends
+    - `docker-compose-multi-node.yaml`
+- Azure Container Instances: CeleryExecutor, postgres/redis backends, 
+ACI-compatible
+    - `docker-compose-aci.yaml`
+- Azure Kubernetes Service: KubernetesExecutor, postgres/redis backends, 
+AKS-compatible
+    - `docker-compose-aks.yaml`
+    
 ## Azure Authentication for Web UI
 This uses the OAuth2 authorization code flow facilitated by Flask-AppBuilder. 
 In order for the OAuth2 flow to work, an application registration is required 
 with the following properties (all other properties can be left as per 
 defaults).
 
-- API permissions: User.Read (Delegated)
-- Redirect URIs should include (port is ignored by Azure):
+- API permissions:
+    - Graph API: 
+        - User.Read (Delegated)
+- Redirect URI (port is ignored):
     - http://[your airflow URI]/oauth-authorized/azure
 
 Per Microsoft [guidelines](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow), 

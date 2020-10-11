@@ -13,7 +13,7 @@ declare ENV_SECRET=""
 declare REGISTRY_URL=""
 declare REGISTRY_USER=""
 declare REGISTRY_PWD=""
-declare YAML_CONFIG=./docker-compose-azure.yaml
+declare YAML_CONFIG=~/personal/github/airflow-local/docker-compose-aci.yaml
 
 # Create new ACR
 #az acr create \

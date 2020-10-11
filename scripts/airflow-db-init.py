@@ -2,7 +2,7 @@ import logging
 import json
 import os
 
-from airflow.models import Connection
+from airflow.models import Connection, Variable
 from airflow.utils.db import provide_session
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,15 @@ def update_airflow_db(params, session=None):
 
 
 @provide_session
-def update_azure_aci(params, session=None):
+def add_azure_registry(params, session=None):
+    db = Connection(**params)
+
+    session.add(db)
+    session.commit()
+
+
+@provide_session
+def update_aci_connection(params, session=None):
     db = (
         session
         .query(Connection)
@@ -79,11 +87,12 @@ def update_azure_aci(params, session=None):
 
 
 @provide_session
-def add_azure_registry(params, session=None):
-    db = Connection(**params)
+def add_aci_config(key, path, session=None):
 
-    session.add(db)
-    session.commit()
+    with open(path, 'r') as f:
+        config = json.load(f)
+        Variable.set(key, value=config,
+                     serialize_json=True, session=session)
 
 
 @provide_session
@@ -114,10 +123,18 @@ if __name__ == "__main__":
     update_redis_db(db_config['redis_default'])
     update_postgres_db(db_config['postgres_default'])
     update_airflow_db(db_config['airflow_db'])
-    update_azure_aci(db_config['azure_container_instances_default'])
+    update_aci_connection(db_config['azure_container_instances_default'])
     add_azure_registry(db_config['azure_registry_default'])
 
     # if bool(os.environ.get('AIRFLOW__WEBSERVER__AUTHENTICATE', False)) \
     #         and not bool(os.environ.get('AIRFLOW__WEBSERVER__RBAC', False)):
     #     logger.info('Adding default user...')
     #     add_default_user()
+
+    logger.info('Updating variables...')
+
+    # TODO: Convert to configurable mapping.
+    aci_path = os.path.join(os.environ['AIRFLOW_HOME'],
+                            'scripts', 'config', 'box2lake.json')
+
+    add_aci_config('aci_config', aci_path)

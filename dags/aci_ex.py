@@ -3,8 +3,6 @@
 Example using Azure operators for ACI.
 """
 from datetime import datetime, timedelta
-import json
-import os
 
 from airflow import DAG
 from airflow.contrib.operators.azure_container_instances_operator import (
@@ -12,6 +10,7 @@ from airflow.contrib.operators.azure_container_instances_operator import (
 )
 from airflow.operators.email_operator import EmailOperator
 from airflow.utils.dates import days_ago
+# from airflow.utils import timezone
 
 default_args = {
     'owner': 'airflow',
@@ -20,12 +19,12 @@ default_args = {
     'email_on_failure': True,
     'email_on_retry': False,
     'retries': 1,
-    'retry_delay': timedelta(seconds=5),
-    'catchup': False
-    # 'queue': 'airq1',
-    # 'pool': 'backfill',
+    'retry_delay': timedelta(minutes=1),
+    'catchup': False,
+    'queue': 'airq1',
+    'pool': 'default_pool',
     # 'priority_weight': 10,
-    # 'end_date': datetime(2016, 1, 1),
+    # 'end_date': timezone.datetime(2016, 1, 1),  # use tz aware
     # 'wait_for_downstream': False,
     # 'dag': dag,
     # 'sla': timedelta(hours=2),
@@ -37,12 +36,10 @@ default_args = {
     # 'trigger_rule': 'all_success'
 }
 
-# TODO: Move configuration to variable?
-box2lake_path = os.path.join(os.environ['AIRFLOW_HOME'],
-                             'dags', 'config', 'box2lake.json')
-with open(box2lake_path, 'r') as f:
-    box2lake_config = json.load(f)
-
+# Per Airflow best practices:
+# In general, don't write any code outside the tasks. The code outside
+# the tasks runs every time Airflow parses the DAG, which happens every
+# second by default.
 with DAG('aci_ex',
          default_args=default_args,
          description='Example using Azure ACI operator',
@@ -61,11 +58,10 @@ with DAG('aci_ex',
         name='airflow-dev-box2lake',
         image='x.azurecr.io/y:1.0',
         region='East US',
-        environment_variables=box2lake_config,
+        # Use jinja to lazy evaluate until task execution.
+        environment_variables="{{ var.json.aci_config }}",
         memory_in_gb=1.5,
         cpu=1.0,
-        queue='airq1',
-        pool='default_pool'
     )
 
     body = """
