@@ -88,7 +88,9 @@ def update_aci_connection(params, session=None):
 
 @provide_session
 def add_aci_config(key, path, session=None):
-
+    # TODO: Storing the full config as a variable is visible to
+    # anyone who can see the Variables screen. This is insecure
+    # so it would be preferable to use a key vault.
     with open(path, 'r') as f:
         config = json.load(f)
         Variable.set(key, value=config,

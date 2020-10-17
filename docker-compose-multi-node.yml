@@ -1,0 +1,88 @@
+# Scaled out version to be used as a basis for production deployments.
+version: "3.8"
+services:
+    postgres-db:
+        image: postgres:13
+        ports:
+            - "5432:5432"
+        environment:
+            - POSTGRES_USER=sa
+            - POSTGRES_PASSWORD=pwd
+            - POSTGRES_DB=airflow
+    redis-kv:
+        image: redis:6.0
+        ports:
+            - 6379:6379
+    smtp-local:
+        image: namshi/smtp
+        ports:
+            - 25:25
+    airflow-web:
+        image: airflow-web
+#        entrypoint: ./scripts/airflow-web-start.sh
+        entrypoint: ./scripts/airflow-all-start.sh
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - 8080:8080
+            - 5555:5555
+        depends_on:
+            - postgres-db
+            - redis-kv
+            - smtp-local
+        env_file: .env
+        environment:
+            - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+            # Comment out to enable OAuth2
+            - AIRFLOW__WEBSERVER__AUTHENTICATE=False
+            - AIRFLOW__WEBSERVER__RBAC=False
+            - AIRFLOW__WEBSERVER__AUTH_BACKEND=airflow.api.auth.backend.deny_all
+        volumes:
+            - ~/personal/github/airflow-local/dags:/opt/airflow/dags
+#    airflow-scheduler:
+#        image: airflow-scheduler
+#        entrypoint: ./scripts/airflow-scheduler-start.sh
+#        build:
+#            context: .
+#            dockerfile: Dockerfile
+#        ports:
+#            - 5555:5555
+#        depends_on:
+#            - postgres-db
+#            - redis-kv
+#            - smtp-local
+#            - airflow-web
+#        env_file: .env
+#        environment:
+#            - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+#        volumes:
+#            - ~/personal/github/airflow-local/dags:/opt/airflow/dags
+#    airflow-worker-1:
+#        image: apache/airflow:1.10.12
+#        entrypoint: ["airflow", "worker", "-q", "airq1", "-cn", "airworker1"]
+#        depends_on:
+#            - postgres-db
+#            - redis-kv
+#            - smtp-local
+#            - airflow-web
+#            - airflow-scheduler
+#        env_file: .env
+#        environment:
+#            - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+#        volumes:
+#            - ~/personal/github/airflow-local/dags:/opt/airflow/dags
+#    airflow-worker-2:
+#        image: apache/airflow:1.10.12
+#        entrypoint: ["airflow", "worker", "-q", "airq2", "-cn", "airworker2"]
+#        depends_on:
+#            - postgres-db
+#            - redis-kv
+#            - smtp-local
+#            - airflow-web
+#            - airflow-scheduler
+#        env_file: .env
+#        environment:
+#            - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+#        volumes:
+#            - ~/personal/github/airflow-local/dags:/opt/airflow/dags
