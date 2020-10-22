@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Unique key of the Deployment instance
+  name: airflow-app
+spec:
+  # Number of pods which should exist at all times
+  replicas: 2
+  selector:
+    matchLabels:
+      app: airflow-web
+  # Pods
+  template:
+    metadata:
+      labels:
+        # Apply this label to pods and default
+        # the Deployment label selector to this value
+        app: airflow-web
+        version: "1"
+        environment: "poc"
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      # volumes:
+      #   - name: "dags"
+      #     hostPath:
+      #       path: "~/personal/github/airflow-local/dags"
+      #   - name: "config"
+      #     configMap:
+      #       name: my-config
+      #   - name: certs
+      #     secret:
+      #       # Create secret using
+      #       # kubectl create secret tls ssl --cert=server.crt --key=server.key
+      #       secretName: ssl
+      containers:
+        # TODO: Configure as airflow web
+        - name: airflow
+          # Run this image
+          image: nginx:latest
+          # volumeMounts:
+          #   - mountPath: "/data"
+          #     name: "dags"
+          #   - name: "config"
+          #     mountPath: "/data/my-config"
+          env:
+          - name: NGINX_PORT
+            value: "8080"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          # readinessProbe:
+          #   httpGet:
+          #     path: /ready
+          #     port: 8080
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+# TODO: Add another deployment stanza for the schedulers.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  # Unique key of the Service instance
+  name: airflow-service
+spec:
+  type: LoadBalancer
+  ports:
+    # Accept traffic sent to port 8080
+    - name: http
+      port: 8888
+      targetPort: 80
+  selector:
+    # Load balance traffic across Pods matching
+    # this label selector
+    app: airflow-test
