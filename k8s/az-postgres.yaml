@@ -1,0 +1,8 @@
+# External database (i.e. managed postgresSQL)
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-paas-db
+spec:
+  type: ExternalName
+  externalName: my-database.azure.com
