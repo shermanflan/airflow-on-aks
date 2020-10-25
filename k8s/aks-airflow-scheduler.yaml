@@ -1,17 +1,17 @@
+# TEST:
+# Use ping: kubectl run curl --image=radial/busyboxplus:curl -i --tty
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  # Unique key of the Deployment instance
-  name: airflow-web-deploy
+  name: airflow-scheduler-deploy
   namespace: default
   labels:
-    app: airflow-web
+    app: airflow-scheduler
 spec:
-  # Number of pods which should exist at all times
   replicas: 1
   selector:
     matchLabels:
-      app: airflow-web
+      app: airflow-scheduler
   strategy:
     rollingUpdate:
       maxSurge: 100%
@@ -26,7 +26,7 @@ spec:
       labels:
         # Apply this label to pods and default
         # the Deployment label selector to this value
-        app: airflow-web
+        app: airflow-scheduler
         # version: "1"
         # environment: "poc"
     spec:
@@ -39,6 +39,12 @@ spec:
         - name: "az-dags"
           persistentVolumeClaim:
             claimName: azure-claim-dags
+        - name: "az-scripts"
+          persistentVolumeClaim:
+            claimName: azure-claim-scripts
+        - name: "az-init"
+          persistentVolumeClaim:
+            claimName: azure-claim-init
         # Create config using kubectl create configmap
         # - name: "config"
         #   configMap:
@@ -52,9 +58,15 @@ spec:
         - name: airflow
           image: rkovkytk.azurecr.io/airflow:1.10.12
           imagePullPolicy: Always  # IfNotPresent
+          command:
+              - "./scripts/airflow-scheduler-start.sh"
           volumeMounts:
             - name: "az-dags"
               mountPath: "/opt/airflow/dags"
+            - name: "az-scripts"
+              mountPath: "/opt/airflow/scripts"
+            - name: "az-init"
+              mountPath: "/opt/airflow/init"
             # - name: "config"
             #   mountPath: "/data/my-config"
             # - name: certs
@@ -62,13 +74,27 @@ spec:
             #   readOnly: true
           env:
             - name: AIRFLOW__CORE__LOGGING_LEVEL
-              value: INFO
+              value: "INFO"
             - name: AIRFLOW__CORE__EXECUTOR
-              value: SequentialExecutor
+              value: "CeleryExecutor"
             - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-              value: "sqlite:////opt/airflow/airflow.db"
+              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-svc/airflow"
             - name: AIRFLOW__CELERY__BROKER_URL
-              value: "redis://40.76.155.221:6379/0"
+              value: "redis://airflow-redis-svc:6379/0"
+            - name: AIRFLOW__CELERY__RESULT_BACKEND
+              value: "db+postgresql://sa:pwd@airflow-postgres-svc/airflow"
+            - name: AIRFLOW__CORE__FERNET_KEY
+              value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
+            - name: AIRFLOW_CORE_STORE_SERIALIZED_DAGS
+              value: "True"
+            - name: AIRFLOW_CORE_STORE_DAG_CODE
+              value: "True"
+            - name: AIRFLOW_CORE_MIN_SERIALIZED_DAG_FETCH_INTERVAL
+              value: "30"
+            - name: AIRFLOW__SMTP__SMTP_HOST
+              value: "airflow-smtp-svc"
+            - name: AIRFLOW__SMTP__SMTP_STARTTLS
+              value: "False"
             # - name: FROM_CONFIG_MAP
             #   valueFrom:
             #     configMapKeyRef:
@@ -82,7 +108,7 @@ spec:
               cpu: "2000m"
               memory: "2Gi"
           ports:
-            - containerPort: 8080
+            - containerPort: 5555
               name: http
               protocol: TCP
           # readinessProbe:
@@ -106,15 +132,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: airflow-service
+  name: airflow-scheduler-service
 spec:
   type: LoadBalancer
   ports:
     - name: http
-      port: 8080
-      targetPort: 8080
+      port: 5555
+      targetPort: 5555
   selector:
     # Load balance traffic across Pods matching
     # this label selector
-    app: airflow-web
+    app: airflow-scheduler
 ---

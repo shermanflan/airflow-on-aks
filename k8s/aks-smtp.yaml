@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-smtp-deploy
+  namespace: default
+  labels:
+    app: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-smtp
+  template:
+    metadata:
+      labels:
+        app: airflow-smtp
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      containers:
+        - name: smtp
+          image: namshi/smtp
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+          ports:
+            - containerPort: 25
+              name: http
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-smtp-svc
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 25
+      targetPort: 25
+  selector:
+    app: airflow-smtp

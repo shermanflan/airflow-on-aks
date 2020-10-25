@@ -20,9 +20,9 @@ RUN pip install --no-cache-dir --user -r ${AIRFLOW_HOME}/dev-requirements.txt \
 # TODO: Copying azureauth.json to the image is insecure. This is
 # visible to anyone who pulls the image. Consider mounting to a
 # volume or using a key vault.
-COPY --chown=airflow:airflow scripts ${AIRFLOW_HOME}/scripts
-RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.py
-RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.sh
+# COPY --chown=airflow:airflow scripts ${AIRFLOW_HOME}/scripts
+# RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.py
+# RUN chmod a+x ${AIRFLOW_HOME}/scripts/*.sh
 
 COPY --chown=airflow:airflow webserver_config.py ${AIRFLOW_HOME}/webserver_config.py
 RUN chmod a+x ${AIRFLOW_HOME}/webserver_config.py

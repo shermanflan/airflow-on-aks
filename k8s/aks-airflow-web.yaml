@@ -1,0 +1,148 @@
+# TEST:
+# Use ping: kubectl run curl --image=radial/busyboxplus:curl -i --tty
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Unique key of the Deployment instance
+  name: airflow-web-deploy
+  namespace: default
+  labels:
+    app: airflow-web
+spec:
+  # Number of pods which should exist at all times
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-web
+  strategy:
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 0
+    type: RollingUpdate
+  # revisionHistoryLimit: 3
+  # minReadySeconds: 60
+  # progressDeadlineSeconds: 600
+  # Pods
+  template:
+    metadata:
+      labels:
+        # Apply this label to pods and default
+        # the Deployment label selector to this value
+        app: airflow-web
+        # version: "1"
+        # environment: "poc"
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      # Create using kubectl create secret rko.acr.io my-image-pull-secret ...
+      # imagePullSecrets:
+      #   - name:  my-image-pull-secret
+      volumes:
+        - name: "az-dags"
+          persistentVolumeClaim:
+            claimName: azure-claim-dags
+        - name: "az-scripts"
+          persistentVolumeClaim:
+            claimName: azure-claim-scripts
+        - name: "az-init"
+          persistentVolumeClaim:
+            claimName: azure-claim-init
+        # Create config using kubectl create configmap
+        # - name: "config"
+        #   configMap:
+        #     name: my-config
+        # Create secret using
+        # kubectl create secret tls ssl --cert=server.crt --key=server.key
+        # - name: certs
+        #   secret:
+        #     secretName: ssl
+      containers:
+        - name: airflow
+          image: rkovkytk.azurecr.io/airflow:1.10.12
+          imagePullPolicy: Always  # IfNotPresent
+          command:
+              - "./scripts/airflow-web-start.sh"
+          volumeMounts:
+            - name: "az-dags"
+              mountPath: "/opt/airflow/dags"
+            - name: "az-scripts"
+              mountPath: "/opt/airflow/scripts"
+            - name: "az-init"
+              mountPath: "/opt/airflow/init"
+            # - name: "config"
+            #   mountPath: "/data/my-config"
+            # - name: certs
+            #   mountPath: "/ssl"
+            #   readOnly: true
+          env:
+            - name: AIRFLOW__CORE__LOGGING_LEVEL
+              value: "INFO"
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: "CeleryExecutor"
+            - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-svc/airflow"
+            - name: AIRFLOW__CELERY__BROKER_URL
+              value: "redis://airflow-redis-svc:6379/0"
+            - name: AIRFLOW__CELERY__RESULT_BACKEND
+              value: "db+postgresql://sa:pwd@airflow-postgres-svc/airflow"
+            - name: AIRFLOW__CORE__FERNET_KEY
+              value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
+            - name: AIRFLOW_CORE_STORE_SERIALIZED_DAGS
+              value: "True"
+            - name: AIRFLOW_CORE_STORE_DAG_CODE
+              value: "True"
+            - name: AIRFLOW_CORE_MIN_SERIALIZED_DAG_FETCH_INTERVAL
+              value: "30"
+            - name: AIRFLOW__SMTP__SMTP_HOST
+              value: "airflow-smtp-svc"
+            - name: AIRFLOW__SMTP__SMTP_STARTTLS
+              value: "False"
+            # - name: FROM_CONFIG_MAP
+            #   valueFrom:
+            #     configMapKeyRef:
+            #       name: my-config
+            #       key: another-param
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "500Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8080
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+          #   failureThreshold: 3
+          #   successThreshold: 1
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #       - airflow
+          #       - info
+          #       - --anonymize
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+---
+# kubectl expose is a synonym for this stanza
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-web-service
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    # Load balance traffic across Pods matching
+    # this label selector
+    app: airflow-web
+---

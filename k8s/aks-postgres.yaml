@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db
+  namespace: default
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-postgres
+  strategy:
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 0
+    type: RollingUpdate
+  minReadySeconds: 60
+  progressDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        app: airflow-postgres
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      containers:
+        - name: postgres
+          image: postgres:13
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "1Gi"
+          ports:
+            - containerPort: 5432
+              name: http
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              value: sa
+            - name: POSTGRES_PASSWORD
+              value: pwd
+            - name: POSTGRES_DB
+              value: airflow
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8080
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+          #   failureThreshold: 3
+          #   successThreshold: 1
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #       - airflow
+          #       - info
+          #       - --anonymize
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+---
+# TODO: Make internal only (ClusterIP?)
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-postgres-svc
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 5432
+      targetPort: 5432
+  selector:
+    app: airflow-postgres

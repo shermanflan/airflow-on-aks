@@ -1,3 +1,4 @@
+# TODO: Make into cluster?
 # Testing
 # kubectl exec redis-0 -c redis -- redis-cli -p 6379 set foo 10
 # kubectl exec redis-2 -c redis -- redis-cli -p 6379 get foo
@@ -29,7 +30,7 @@ spec:
         "beta.kubernetes.io/os": linux
       containers:
         - name: redis
-          image: redis:5.0.9
+          image: redis:6.0
           imagePullPolicy: IfNotPresent
           resources:
             requests:
@@ -59,6 +60,7 @@ spec:
           #   initialDelaySeconds: 5
           #   periodSeconds: 5
 ---
+# TODO: Make internal only (ClusterIP?)
 apiVersion: v1
 kind: Service
 metadata:
