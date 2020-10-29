@@ -1,5 +1,3 @@
-# TEST:
-# Use ping: kubectl run curl --image=radial/busyboxplus:curl -i --tty
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,24 +15,15 @@ spec:
       maxSurge: 100%
       maxUnavailable: 0
     type: RollingUpdate
-  # revisionHistoryLimit: 3
   # minReadySeconds: 60
   # progressDeadlineSeconds: 600
-  # Pods
   template:
     metadata:
       labels:
-        # Apply this label to pods and default
-        # the Deployment label selector to this value
         app: airflow-scheduler
-        # version: "1"
-        # environment: "poc"
     spec:
       nodeSelector:
         "beta.kubernetes.io/os": linux
-      # Create using kubectl create secret rko.acr.io my-image-pull-secret ...
-      # imagePullSecrets:
-      #   - name:  my-image-pull-secret
       volumes:
         - name: "az-dags"
           persistentVolumeClaim:
@@ -45,18 +34,9 @@ spec:
         - name: "az-init"
           persistentVolumeClaim:
             claimName: azure-claim-init
-        # Create config using kubectl create configmap
-        # - name: "config"
-        #   configMap:
-        #     name: my-config
-        # Create secret using
-        # kubectl create secret tls ssl --cert=server.crt --key=server.key
-        # - name: certs
-        #   secret:
-        #     secretName: ssl
       containers:
         - name: airflow
-          image: rkovkytk.azurecr.io/airflow:1.10.12
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12
           imagePullPolicy: Always  # IfNotPresent
           command:
               - "./scripts/airflow-scheduler-start.sh"
@@ -67,11 +47,6 @@ spec:
               mountPath: "/opt/airflow/scripts"
             - name: "az-init"
               mountPath: "/opt/airflow/init"
-            # - name: "config"
-            #   mountPath: "/data/my-config"
-            # - name: certs
-            #   mountPath: "/ssl"
-            #   readOnly: true
           env:
             - name: AIRFLOW__CORE__LOGGING_LEVEL
               value: "INFO"
@@ -95,11 +70,6 @@ spec:
               value: "airflow-smtp-svc"
             - name: AIRFLOW__SMTP__SMTP_STARTTLS
               value: "False"
-            # - name: FROM_CONFIG_MAP
-            #   valueFrom:
-            #     configMapKeyRef:
-            #       name: my-config
-            #       key: another-param
           resources:
             requests:
               cpu: "1000m"
@@ -107,10 +77,6 @@ spec:
             limits:
               cpu: "2000m"
               memory: "2Gi"
-          ports:
-            - containerPort: 5555
-              name: http
-              protocol: TCP
           # readinessProbe:
           #   httpGet:
           #     path: /health
@@ -127,20 +93,3 @@ spec:
           #       - --anonymize
           #   initialDelaySeconds: 5
           #   periodSeconds: 5
----
-# kubectl expose is a synonym for this stanza
-apiVersion: v1
-kind: Service
-metadata:
-  name: airflow-scheduler-service
-spec:
-  type: LoadBalancer
-  ports:
-    - name: http
-      port: 5555
-      targetPort: 5555
-  selector:
-    # Load balance traffic across Pods matching
-    # this label selector
-    app: airflow-scheduler
----

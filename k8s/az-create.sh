@@ -46,10 +46,17 @@ echo "Getting credentials"
 az aks get-credentials \
     --resource-group $RESOURCE_GROUP \
     --name $K8S_CLUSTER \
-    --overwite-existing
+    --overwrite-existing
 
 echo "Creating Azure file shares secret for $AKS_PERS_STORAGE_ACCOUNT_NAME"
 kubectl create secret generic \
     az-file-secret \
     --from-literal=azurestorageaccountname=$AKS_PERS_STORAGE_ACCOUNT_NAME \
     --from-literal=azurestorageaccountkey=$STORAGE_KEY
+
+echo "Creating Azure OAuth secrets for tenant $AZURE_TENANT_ID"
+kubectl create secret generic \
+    az-oauth-secret \
+    --from-literal=azure-tenant-id=$AZURE_TENANT_ID \
+    --from-literal=azure-app-id=$AZURE_APP_ID \
+    --from-literal=azure-app-key=$AZURE_APP_KEY

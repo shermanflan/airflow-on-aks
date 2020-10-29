@@ -47,4 +47,8 @@ echo 'Starting Airflow webserver...'
 
 airflow webserver &
 
+echo 'Starting Flower UI...'
+
+airflow flower --basic_auth=sa:pwd &  # --basic_auth=user1:password1,user2:password2
+
 wait

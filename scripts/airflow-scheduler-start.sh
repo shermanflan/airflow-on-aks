@@ -20,8 +20,7 @@ echo 'Running workers...'
 # NOTE: Seems like only 1 worker per host works.
 airflow worker -q airq1,airq2 -cn airworker0 --daemon &
 
-echo 'Starting Flower UI...'
-
-airflow flower &  # --basic_auth=user1:password1,user2:password2
+# echo 'Starting Flower UI...'
+# airflow flower &  # --basic_auth=user1:password1,user2:password2
 
 wait
