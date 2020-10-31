@@ -1,15 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres-db
+  name: postgres-deploy
   namespace: default
-  labels:
-    app: postgres
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: airflow-postgres
+      name: postgres
+      instance: airflow-postgres
+      version: "1.0.0"
+      component: database
+      part-of: airflow
   strategy:
     rollingUpdate:
       maxSurge: 100%
@@ -20,7 +22,11 @@ spec:
   template:
     metadata:
       labels:
-        app: airflow-postgres
+        name: postgres
+        instance: airflow-postgres
+        version: "1.0.0"
+        component: database
+        part-of: airflow
     spec:
       nodeSelector:
         "beta.kubernetes.io/os": linux
@@ -67,7 +73,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: airflow-postgres-svc
+  name: airflow-postgres-service
+  labels:
+    name: postgres
+    instance: airflow-postgres
+    version: "1.0.0"
+    component: database
+    part-of: airflow
 spec:
   type: LoadBalancer
   ports:
@@ -75,4 +87,8 @@ spec:
       port: 5432
       targetPort: 5432
   selector:
-    app: airflow-postgres
+    name: postgres
+    instance: airflow-postgres
+    version: "1.0.0"
+    component: database
+    part-of: airflow

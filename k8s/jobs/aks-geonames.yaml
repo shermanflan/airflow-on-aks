@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: geonames
+  namespace: default
+  labels:
+    name: geonames
+    instance: geonames-job
+    version: "1.0.0"
+    component: batch
+    part-of: jobs
+spec:
+  activeDeadlineSeconds: 1800
+  backoffLimit: 3
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        name: geonames
+        instance: geonames-job
+        version: "1.0.0"
+        component: batch
+        part-of: jobs
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: geonames
+          image: rkoH1pVL.azurecr.io/geonames:latest
+          imagePullPolicy: Always  # IfNotPresent
+          env:
+            - name: APP_LOG_KEY
+              value: "rko.aks.geonames2lake.dev"
+            - name: LOG_LEVEL
+              value: "DEBUG"
+            - name: CENSUS_STATES_URI
+              value: "https://www2.census.gov/programs-surveys/popest/geographies/2019/state-geocodes-v2019.xlsx"
+            - name: CENSUS_COUNTIES_URI
+              value: "https://www2.census.gov/geo/docs/maps-data/data/gazetteer/2019_Gazetteer/2019_Gaz_counties_national.zip"
+            - name: GEONAMES_ZIPCODES_URI
+              value: "http://download.geonames.org/export/zip/US.zip"
+            - name: CENSUS_STATE_NAME
+              value: "MasterData.StateTerritory"
+            - name: CENSUS_COUNTY_NAME
+              value: "MasterData.CountyProvince"
+            - name: GEONAMES_ZIPCODE_NAME
+              value: "MasterData.ZipCode"
+            - name: LAKE_ACCOUNT_NAME
+              value: "airflowstoragesandbox"
+            - name: LAKE_ACCOUNT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: az-file-secret
+                  key: azurestorageaccountkey
+            - name: LAKE_CONTAINER_NAME
+              value: "enterprisedata"
+            - name: LAKE_BASE_PATH
+              value: "Raw/MasterData/Geography/Brightspring"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "500Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"

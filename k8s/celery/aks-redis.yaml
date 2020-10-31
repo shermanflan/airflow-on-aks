@@ -5,15 +5,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis-kv
+  name: redis-deploy
   namespace: default
-  labels:
-    app: redis
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: airflow-redis
+      name: redis
+      instance: airflow-redis
+      version: "1.0.0"
+      component: queue
+      part-of: airflow
   strategy:
     rollingUpdate:
       maxSurge: 100%
@@ -24,7 +26,11 @@ spec:
   template:
     metadata:
       labels:
-        app: airflow-redis
+        name: redis
+        instance: airflow-redis
+        version: "1.0.0"
+        component: queue
+        part-of: airflow
     spec:
       nodeSelector:
         "beta.kubernetes.io/os": linux
@@ -64,7 +70,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: airflow-redis-svc
+  name: airflow-redis-service
+  labels:
+    name: redis
+    instance: airflow-redis
+    version: "1.0.0"
+    component: queue
+    part-of: airflow
 spec:
   type: LoadBalancer
   ports:
@@ -72,4 +84,8 @@ spec:
       port: 6379
       targetPort: 6379
   selector:
-    app: airflow-redis
+    name: redis
+    instance: airflow-redis
+    version: "1.0.0"
+    component: queue
+    part-of: airflow

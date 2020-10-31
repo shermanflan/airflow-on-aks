@@ -1,20 +1,5 @@
 #!/bin/bash -eux
 
-declare CONTAINER_GROUP="azure-airflow-test"
-declare RESOURCE_GROUP="airflow-sandbox"
-declare SUBSCRIPTION=""
-declare REGISTRY=""
-declare LOCATION="East US"
-declare IMAGE="azure-airflow:1.10.12"
-declare ENV_TENANT=""
-declare ENV_CLIENT=""
-declare ENV_RESOURCE=""
-declare ENV_SECRET=""
-declare REGISTRY_URL=""
-declare REGISTRY_USER=""
-declare REGISTRY_PWD=""
-declare YAML_CONFIG=~/personal/github/airflow-local/docker-compose-aci.yaml
-
 # Create new ACR
 #az acr create \
 #  --resource-group $RESOURCE_GROUP \

@@ -115,7 +115,7 @@ def add_default_user(session=None):
 if __name__ == "__main__":
 
     db_path = os.path.join(os.environ['AIRFLOW_HOME'],
-                           'scripts', 'config', 'connections.json')
+                           'scripts', 'metadata', 'connections.json')
 
     with open(db_path, 'r') as f:
         db_config = json.load(f)

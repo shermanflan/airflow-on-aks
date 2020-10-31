@@ -1,24 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: airflow-workers-deploy
+  name: airflow-scheduler-deploy
   namespace: default
-  labels:
-    app: airflow-workers
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: airflow-workers
+      name: airflow-scheduler
+      instance: airflow-scheduler-celery
+      version: "1.0.0"
+      component: scheduler
+      part-of: airflow
   strategy:
     rollingUpdate:
       maxSurge: 100%
       maxUnavailable: 0
     type: RollingUpdate
+  # minReadySeconds: 60
+  # progressDeadlineSeconds: 600
   template:
     metadata:
       labels:
-        app: airflow-workers
+        name: airflow-scheduler
+        instance: airflow-scheduler-celery
+        version: "1.0.0"
+        component: scheduler
+        part-of: airflow
     spec:
       nodeSelector:
         "beta.kubernetes.io/os": linux
@@ -32,16 +40,16 @@ spec:
         - name: "az-init"
           persistentVolumeClaim:
             claimName: azure-claim-init
+      initContainers:
+        - name: airflow-wait-web
+          image: busybox:1.32.0
+          command: ['sh', '-c', "until nslookup airflow-web-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-web-service; sleep 2; done"]
       containers:
         - name: airflow
           image: rkoH1pVL.azurecr.io/airflow:1.10.12
           imagePullPolicy: Always  # IfNotPresent
           command:
-              - "airflow"
-          args:
-              - worker
-              - -q 
-              - airq1,airq2
+              - "./scripts/airflow-scheduler-start.sh"
           volumeMounts:
             - name: "az-dags"
               mountPath: "/opt/airflow/dags"
@@ -55,11 +63,11 @@ spec:
             - name: AIRFLOW__CORE__EXECUTOR
               value: "CeleryExecutor"
             - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-svc/airflow"
+              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-service/airflow"
             - name: AIRFLOW__CELERY__BROKER_URL
-              value: "redis://airflow-redis-svc:6379/0"
+              value: "redis://airflow-redis-service:6379/0"
             - name: AIRFLOW__CELERY__RESULT_BACKEND
-              value: "db+postgresql://sa:pwd@airflow-postgres-svc/airflow"
+              value: "db+postgresql://sa:pwd@airflow-postgres-service/airflow"
             - name: AIRFLOW__CORE__FERNET_KEY
               value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
             - name: AIRFLOW_CORE_STORE_SERIALIZED_DAGS
@@ -74,8 +82,8 @@ spec:
               value: "False"
           resources:
             requests:
-              cpu: "500m"
-              memory: "512Mi"
+              cpu: "1000m"
+              memory: "500Mi"
             limits:
               cpu: "2000m"
               memory: "2Gi"

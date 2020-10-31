@@ -19,6 +19,19 @@ az acr build \
     --registry $REGISTRY \
     --image $IMAGE .
 
+# TODO: Use sed to replace theme.
+# echo "Publishing ${IMAGE2} to ${REGISTRY}"
+# az acr build \
+#     --registry $REGISTRY \
+#     --image $IMAGE2 .
+
+cd ~/personal/github/azure-methods/Geonames
+echo "Publishing ${GEONAMES_IMAGE} to ${REGISTRY}"
+az acr build \
+    --registry $REGISTRY \
+    --image $GEONAMES_IMAGE .
+cd ~/personal/github/airflow-local
+
 echo "Creating k8s cluster $K8S_CLUSTER"
 az aks create \
     --subscription "$SUBSCRIPTION" \
@@ -41,6 +54,12 @@ az aks create \
     # --admin-username azureuser \
     # --disable-rbac \
     # --enable-addons monitoring \
+
+# echo "Rescaling cluster $K8S_CLUSTER"
+# az aks scale \
+#     --resource-group $RESOURCE_GROUP \
+#     --name $K8S_CLUSTER \
+#     --node-count 4
 
 echo "Getting credentials"
 az aks get-credentials \

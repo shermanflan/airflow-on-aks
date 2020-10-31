@@ -11,6 +11,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def run(coins, C):
+    memo = [
+        [n for n in range(C+1)]
+        for _ in coins
+    ]
+
+    for i_coin, coin in enumerate(coins[1:], start=1):
+        for coin_sum in range(C+1):
+            if coin <= coin_sum:
+                memo[i_coin][coin_sum] = min(memo[i_coin][coin_sum - coin] + 1,
+                                             memo[i_coin-1][coin_sum])
+            else:
+                memo[i_coin][coin_sum] = memo[i_coin-1][coin_sum]
+    return memo[-1][-1]
+
+
 if __name__ == '__main__':
 
     logger.info('Generate fernet key')
@@ -22,3 +38,4 @@ if __name__ == '__main__':
     # r.set('rko', '21')
     # logger.info(f"RESULT: {r.get('foo')}")
 
+    logger.info(run([1, 5, 6, 8], 21))

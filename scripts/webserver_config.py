@@ -91,7 +91,7 @@ OAUTH_PROVIDERS = [
 # in order to fully utilize the theme. (or use that property in conjunction with theme)
 # APP_THEME = "bootstrap-theme.css"  # default bootstrap
 # APP_THEME = "amelia.css"
-APP_THEME = "cerulean.css" # use to distinguish from prod
+# APP_THEME = "cerulean.css" # prod
 # APP_THEME = "cosmo.css"
 # APP_THEME = "cyborg.css"
 # APP_THEME = "darkly.css"
@@ -102,7 +102,7 @@ APP_THEME = "cerulean.css" # use to distinguish from prod
 # APP_THEME = "readable.css"
 # APP_THEME = "sandstone.css"
 # APP_THEME = "simplex.css"
-# APP_THEME = "slate.css"
+APP_THEME = "slate.css" # dev
 # APP_THEME = "solar.css"
 # APP_THEME = "spacelab.css"
 # APP_THEME = "superhero.css"
