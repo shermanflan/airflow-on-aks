@@ -11,6 +11,7 @@ metadata:
     part-of: jobs
 spec:
   activeDeadlineSeconds: 1800
+  ttlSecondsAfterFinished: 180
   backoffLimit: 3
   completions: 1
   parallelism: 1
@@ -23,7 +24,7 @@ spec:
         component: batch
         part-of: jobs
     spec:
-      restartPolicy: Never
+      restartPolicy: Never  # OnFailure
       containers:
         - name: geonames
           image: rkoH1pVL.azurecr.io/geonames:latest
