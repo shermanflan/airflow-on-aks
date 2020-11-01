@@ -35,13 +35,10 @@ spec:
         - name: "az-scripts"
           persistentVolumeClaim:
             claimName: azure-claim-scripts
-        - name: "az-init"
-          persistentVolumeClaim:
-            claimName: azure-claim-init
       initContainers:
         - name: airflow-wait-web
           image: busybox:1.32.0
-          command: ['sh', '-c', "until nslookup airflow-web-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-web-service; sleep 2; done"]
+          command: ['sh', '-c', "until nslookup airflow-web-service; do echo waiting for airflow-web-service; sleep 2; done"]
       containers:
         - name: airflow
           image: rkoH1pVL.azurecr.io/airflow:1.10.12
@@ -57,8 +54,6 @@ spec:
               mountPath: "/opt/airflow/dags"
             - name: "az-scripts"
               mountPath: "/opt/airflow/scripts"
-            - name: "az-init"
-              mountPath: "/opt/airflow/init"
           env:
             - name: AIRFLOW__CORE__LOGGING_LEVEL
               value: "INFO"
@@ -90,7 +85,6 @@ spec:
               cpu: "2000m"
               memory: "2Gi"
           # TODO: Consider readiness or startup probe into database
-          # TODO: Alternatively, could use an initContainer.
           # readinessProbe:
           #   httpGet:
           #     path: /health

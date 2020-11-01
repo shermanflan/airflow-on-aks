@@ -21,15 +21,15 @@ az acr build \
 
 echo "Publishing ${IMAGE2} to ${REGISTRY}"
 
-sed -e '/APP_THEME = "slate/s/^#* //' $WEB_CONFIG
-sed -e '/APP_THEME = "cerulean/s/^#*/# /' $WEB_CONFIG
+sed -i -e '/APP_THEME = "cyborg/s/^#* //' $WEB_CONFIG
+sed -i -e '/APP_THEME = "cerulean/s/^#*/# /' $WEB_CONFIG
 
 az acr build \
     --registry $REGISTRY \
     --image $IMAGE2 .
 
-sed -e '/APP_THEME = "slate/s/^#*/# /' $WEB_CONFIG
-sed -e '/APP_THEME = "cerulean/s/^#* //' $WEB_CONFIG
+sed -i -e '/APP_THEME = "cyborg/s/^#*/# /' $WEB_CONFIG
+sed -i -e '/APP_THEME = "cerulean/s/^#* //' $WEB_CONFIG
 
 cd ~/personal/github/azure-methods/Geonames
 echo "Publishing ${GEONAMES_IMAGE} to ${REGISTRY}"

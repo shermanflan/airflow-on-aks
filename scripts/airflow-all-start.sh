@@ -16,7 +16,6 @@ if [ ! -f $INIT_FILE ]
 #    airflow upgradedb  # recommended for prod
 
     # Connections
-    # TODO: Consider CLI command 'airflow connections'.
     python "$AIRFLOW_HOME/scripts/airflow-db-init.py"
 
     echo 'Adding pools...'

@@ -133,10 +133,10 @@ if __name__ == "__main__":
     #     logger.info('Adding default user...')
     #     add_default_user()
 
-    logger.info('Updating variables...')
+    # logger.info('Updating variables...')
 
     # TODO: Convert to configurable mapping.
-    aci_path = os.path.join(os.environ['AIRFLOW_HOME'],
-                            'scripts', 'config', 'box2lake.json')
+    # aci_path = os.path.join(os.environ['AIRFLOW_HOME'],
+    #                         'scripts', 'metadata', 'box2lake.json')
 
-    add_aci_config('aci_config', aci_path)
+    # add_aci_config('aci_config', aci_path)

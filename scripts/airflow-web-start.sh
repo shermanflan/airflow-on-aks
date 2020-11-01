@@ -1,20 +1,24 @@
 #!/bin/bash
 
-# INIT_FILE=$AIRFLOW_HOME/init/.airflowinitialized
-# if [ ! -f $INIT_FILE ]
-#   then
+echo 'Waiting for database initialization...'
 
-#     echo 'One-time bootstrapping of Airflow db'
-#     airflow initdb
+sleep 5
 
-#     echo 'Updating connnections'
-#     python "$AIRFLOW_HOME/scripts/airflow-db-init.py"
+INIT_FILE=$AIRFLOW_HOME/init/.airflowinitialized
+if [ ! -f $INIT_FILE ]
+  then
 
-#     echo 'Adding pools'
-#     airflow pool -s utility_pool 32 "For email, teams, etc."
+    echo 'One-time bootstrapping of Airflow db'
+    airflow initdb
 
-#     touch $INIT_FILE
-# fi
+    echo 'Updating connnections'
+    python "$AIRFLOW_HOME/scripts/airflow-db-init.py"
+
+    echo 'Adding pools'
+    airflow pool -s utility_pool 32 "For email, teams, etc."
+
+    touch $INIT_FILE
+fi
 
 echo 'Starting Airflow webserver'
 
