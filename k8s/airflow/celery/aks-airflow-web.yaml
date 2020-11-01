@@ -63,33 +63,46 @@ spec:
       initContainers:
         - name: airflow-wait-db
           image: busybox:1.32.0
-          command: ['sh', '-c', "until nslookup airflow-postgres-service; do echo waiting for airflow-postgres-service; sleep 2; done"]
-        # - name: airflow-init-db
-        #   image: rkoH1pVL.azurecr.io/airflow:1.10.12
-        #   imagePullPolicy: Always  # IfNotPresent
-        #   command:
-        #       - "./scripts/airflow-init.sh"
-        #   volumeMounts:
-        #     - name: "az-scripts"
-        #       mountPath: "/opt/airflow/scripts"
-        #     - name: "az-init"
-        #       mountPath: "/opt/airflow/init"
-        #   env:
-        #     - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-        #       value: "postgresql+psycopg2://sa:pwd@airflow-postgres-service/airflow"
-        #     - name: AIRFLOW__CORE__FERNET_KEY
-        #       value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
-        #     - name: AIRFLOW__WEBSERVER__RBAC
-        #       value: "True"
-        #     - name: AIRFLOW__WEBSERVER__AUTHENTICATE
-        #       value: "True"
-        #   resources:
-        #     requests:
-        #       cpu: "500m"
-        #       memory: "500Mi"
-        #     limits:
-        #       cpu: "2000m"
-        #       memory: "2Gi"
+          command: ['sh', '-c', "until nslookup airflow-postgres-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-postgres-service; sleep 2; done"]
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "250Mi"
+            limits:
+              cpu: "500m"
+              memory: "500Mi"
+        - name: airflow-init-db
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          imagePullPolicy: Always  # IfNotPresent
+          command:
+              - "./scripts/airflow-init.sh"
+          volumeMounts:
+            - name: "az-scripts"
+              mountPath: "/opt/airflow/scripts"
+            - name: "az-init"
+              mountPath: "/opt/airflow/init"
+          env:
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: "CeleryExecutor"
+            - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-service/airflow"
+            - name: AIRFLOW__CELERY__BROKER_URL
+              value: "redis://airflow-redis-service:6379/0"
+            - name: AIRFLOW__CELERY__RESULT_BACKEND
+              value: "db+postgresql://sa:pwd@airflow-postgres-service/airflow"
+            - name: AIRFLOW__CORE__FERNET_KEY
+              value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
+            - name: AIRFLOW__WEBSERVER__RBAC
+              value: "True"
+            - name: AIRFLOW__WEBSERVER__AUTHENTICATE
+              value: "True"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "500Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
       containers:
         - name: airflow
           image: rkoH1pVL.azurecr.io/airflow:1.10.12
@@ -111,7 +124,7 @@ spec:
             #   readOnly: true
           env:
             - name: AIRFLOW__CORE__LOGGING_LEVEL
-              value: "DEBUG"
+              value: "INFO"
             - name: AIRFLOW__CORE__EXECUTOR
               value: "CeleryExecutor"
             - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN

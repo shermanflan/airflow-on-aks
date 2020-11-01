@@ -6,7 +6,6 @@
 # https://towardsdatascience.com/apache-airflow-and-postgresql-with-docker-and-docker-compose-5651766dfa96
 
 echo 'Waiting for database initialization...'
-
 sleep 5
 
 INIT_FILE=$AIRFLOW_HOME/init/.airflowinitialized
@@ -44,3 +43,5 @@ if [ ! -f $INIT_FILE ]
 
     touch $INIT_FILE
 fi
+
+sleep 30  # temp hack

@@ -8,8 +8,7 @@
 echo 'Starting Airflow scheduler'
 
 echo 'Waiting for database initialization...'
-
-sleep 15
+sleep 30  # temp hack
 
 echo 'Running the Airflow scheduler...'
 

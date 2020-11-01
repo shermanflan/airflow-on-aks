@@ -38,7 +38,14 @@ spec:
       initContainers:
         - name: airflow-wait-web
           image: busybox:1.32.0
-          command: ['sh', '-c', "until nslookup airflow-web-service; do echo waiting for airflow-web-service; sleep 2; done"]
+          command: ['sh', '-c', "until nslookup airflow-web-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-web-service; sleep 5; done"]
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "250Mi"
+            limits:
+              cpu: "500m"
+              memory: "500Mi"
       containers:
         - name: airflow
           image: rkoH1pVL.azurecr.io/airflow:1.10.12
