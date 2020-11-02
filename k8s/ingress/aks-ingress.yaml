@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: global-ingress
+  annotations:
+    kubernetes.io/ingress.class: "PublicIngress"
+spec:
+  tls:
+    - hosts:
+      - myapp.com
+      secretName: myapp-secret
+  rules:
+    - host: myapp.com
+      http:
+      paths:
+      - path: /airflow
+        backend:
+          serviceName: airflow-web-service
+          servicePort: 8080
+      - path: /celery
+        backend:
+          serviceName: airflow-web-service
+          servicePort: 5555

@@ -38,6 +38,8 @@ spec:
             part-of: jobs
         spec:
           restartPolicy: Never  # OnFailure
+          nodeSelector:
+            "beta.kubernetes.io/os": linux
           containers:
             - name: geonames
               image: rkoH1pVL.azurecr.io/geonames:latest

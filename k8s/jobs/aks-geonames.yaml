@@ -25,6 +25,30 @@ spec:
         part-of: jobs
     spec:
       restartPolicy: Never  # OnFailure
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      tolerations:
+        - key: "kubernetes.azure.com/scalesetpriority"
+          operator: "Equal"
+          value: "spot"
+          effect: "NoSchedule"
+      affinity:
+        nodeAffinity:
+          # requiredDuringSchedulingIgnoredDuringExecution:
+          #   nodeSelectorTerms:
+          #   - matchExpressions:
+          #     - key: kubernetes.azure.com/scalesetpriority
+          #       operator: In
+          #       values:
+          #       - spot
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: kubernetes.azure.com/scalesetpriority
+                operator: In
+                values:
+                - spot            
       containers:
         - name: geonames
           image: rkoH1pVL.azurecr.io/geonames:latest

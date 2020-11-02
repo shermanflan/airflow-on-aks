@@ -14,40 +14,43 @@ az acr create \
     --admin-enabled true --sku Basic \
     --verbose
 
+echo "Logging into ${REGISTRY}"
+docker login $REGISTRY.azurecr.io \
+    -u $REGISTRY \
+    -p "$(az acr credential show --name $REGISTRY | jq -r '.passwords[0].value')"
+
 echo "Publishing ${IMAGE} to ${REGISTRY}"
-az acr build \
-    --registry $REGISTRY \
-    --image $IMAGE .
+# az acr build \
+#     --registry $REGISTRY \
+#     --image $IMAGE .
+docker push $REGISTRY.azurecr.io/$IMAGE
 
-echo "Publishing ${IMAGE2} to ${REGISTRY}"
+# echo "Publishing ${IMAGE2} to ${REGISTRY}"
+# sed -i -e '/APP_THEME = "cyborg/s/^#* //' $WEB_CONFIG
+# sed -i -e '/APP_THEME = "cerulean/s/^#*/# /' $WEB_CONFIG
+# az acr build \
+#     --registry $REGISTRY \
+#     --image $IMAGE2 .
+# sed -i -e '/APP_THEME = "cyborg/s/^#*/# /' $WEB_CONFIG
+# sed -i -e '/APP_THEME = "cerulean/s/^#* //' $WEB_CONFIG
 
-sed -i -e '/APP_THEME = "cyborg/s/^#* //' $WEB_CONFIG
-sed -i -e '/APP_THEME = "cerulean/s/^#*/# /' $WEB_CONFIG
-
-az acr build \
-    --registry $REGISTRY \
-    --image $IMAGE2 .
-
-sed -i -e '/APP_THEME = "cyborg/s/^#*/# /' $WEB_CONFIG
-sed -i -e '/APP_THEME = "cerulean/s/^#* //' $WEB_CONFIG
-
-cd ~/personal/github/azure-methods/Geonames
 echo "Publishing ${GEONAMES_IMAGE} to ${REGISTRY}"
-az acr build \
-    --registry $REGISTRY \
-    --image $GEONAMES_IMAGE .
-cd ~/personal/github/airflow-local
+docker push $REGISTRY.azurecr.io/$GEONAMES_IMAGE
 
-echo "Creating k8s cluster $K8S_CLUSTER"
+echo "Creating k8s cluster $K8S_CLUSTER ($K8S_VERSION)"
 az aks create \
     --subscription "$SUBSCRIPTION" \
     --resource-group $RESOURCE_GROUP \
+    --node-resource-group $RESOURCE_GROUP_NODES \
     --location $LOCATION \
     --name $K8S_CLUSTER \
     --node-count 3 \
-    --attach-acr $REGISTRY \
+    --enable-cluster-autoscaler \
+    --min-count 2 \
+    --max-count 5 \
+    --cluster-autoscaler-profile scale-down-unready-time=5m \
     --dns-name-prefix condesa \
-    --kubernetes-version 1.19.0 \
+    --kubernetes-version $K8S_VERSION \
     --load-balancer-sku Standard \
     --outbound-type loadBalancer \
     --network-plugin kubenet \
@@ -55,13 +58,33 @@ az aks create \
     --node-vm-size Standard_B2ms \
     --vm-set-type VirtualMachineScaleSets \
     --zones 1 2 3 \
-    --no-ssh-key
+    --no-ssh-key \
+    --attach-acr $REGISTRY
     # --generate-ssh-keys \
     # --admin-username azureuser \
     # --disable-rbac \
+    # TODO: 
+    # az resource list --resource-type Microsoft.OperationalInsights/workspaces -o json
+    # az aks enable-addons -a monitoring -n ExistingManagedCluster -g ExistingManagedClusterRG --workspace-resource-id "<LONG-ID>"
     # --enable-addons monitoring \
 
-# echo "Rescaling cluster $K8S_CLUSTER"
+echo "Creating $SPOT_POOL"
+az aks nodepool add \
+    --resource-group $RESOURCE_GROUP \
+    --cluster-name $K8S_CLUSTER \
+    --name $SPOT_POOL \
+    --priority Spot \
+    --eviction-policy Delete \
+    --spot-max-price -1 \
+    --enable-cluster-autoscaler \
+    --min-count 1 \
+    --max-count 3 \
+    --os-type Linux \
+    --node-vm-size Standard_DS2_v2 \
+    --zones 1 2 3 \
+    --labels poolbudget=spot
+
+# echo "Manually rescaling $K8S_CLUSTER"
 # az aks scale \
 #     --resource-group $RESOURCE_GROUP \
 #     --name $K8S_CLUSTER \

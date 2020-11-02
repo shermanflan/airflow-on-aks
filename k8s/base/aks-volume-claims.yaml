@@ -1,4 +1,5 @@
 # See: https://docs.microsoft.com/en-us/azure/aks/azure-files-volume#mount-options
+# See: https://docs.microsoft.com/en-us/azure/aks/concepts-storage#storage-classes
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
