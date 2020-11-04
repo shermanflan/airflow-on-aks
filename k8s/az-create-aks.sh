@@ -34,8 +34,16 @@ docker push $REGISTRY.azurecr.io/$IMAGE
 # sed -i -e '/APP_THEME = "cyborg/s/^#*/# /' $WEB_CONFIG
 # sed -i -e '/APP_THEME = "cerulean/s/^#* //' $WEB_CONFIG
 
-echo "Publishing ${GEONAMES_IMAGE} to ${REGISTRY}"
-docker push $REGISTRY.azurecr.io/$GEONAMES_IMAGE
+# echo "Publishing ${GEONAMES_IMAGE} to ${REGISTRY}"
+# docker push $REGISTRY.azurecr.io/$GEONAMES_IMAGE
+
+# See: https://docs.microsoft.com/en-us/azure/aks/static-ip
+# echo "Creating static IP AKSPublicIP"
+# az network public-ip create \
+#     --resource-group $RESOURCE_GROUP \
+#     --name AKSPublicIP \
+#     --sku Standard \
+#     --allocation-method static
 
 echo "Creating k8s cluster $K8S_CLUSTER ($K8S_VERSION)"
 az aks create \
@@ -60,6 +68,7 @@ az aks create \
     --zones 1 2 3 \
     --no-ssh-key \
     --attach-acr $REGISTRY
+
     # --generate-ssh-keys \
     # --admin-username azureuser \
     # --disable-rbac \
@@ -68,21 +77,21 @@ az aks create \
     # az aks enable-addons -a monitoring -n ExistingManagedCluster -g ExistingManagedClusterRG --workspace-resource-id "<LONG-ID>"
     # --enable-addons monitoring \
 
-echo "Creating $SPOT_POOL"
-az aks nodepool add \
-    --resource-group $RESOURCE_GROUP \
-    --cluster-name $K8S_CLUSTER \
-    --name $SPOT_POOL \
-    --priority Spot \
-    --eviction-policy Delete \
-    --spot-max-price -1 \
-    --enable-cluster-autoscaler \
-    --min-count 1 \
-    --max-count 3 \
-    --os-type Linux \
-    --node-vm-size Standard_DS2_v2 \
-    --zones 1 2 3 \
-    --labels poolbudget=spot
+# echo "Creating $SPOT_POOL"
+# az aks nodepool add \
+#     --resource-group $RESOURCE_GROUP \
+#     --cluster-name $K8S_CLUSTER \
+#     --name $SPOT_POOL \
+#     --priority Spot \
+#     --eviction-policy Delete \
+#     --spot-max-price -1 \
+#     --enable-cluster-autoscaler \
+#     --min-count 1 \
+#     --max-count 3 \
+#     --os-type Linux \
+#     --node-vm-size Standard_DS2_v2 \
+#     --zones 1 2 3 \
+#     --labels poolbudget=spot
 
 # echo "Manually rescaling $K8S_CLUSTER"
 # az aks scale \

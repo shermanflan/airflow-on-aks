@@ -8,16 +8,20 @@ spec:
   tls:
     - hosts:
       - myapp.com
+      # The TLS secret must contain keys named tls.crt and tls.key 
+      # that contain the certificate and private key to use for TLS.
       secretName: myapp-secret
   rules:
     - host: myapp.com
       http:
-      paths:
-      - path: /airflow
-        backend:
-          serviceName: airflow-web-service
-          servicePort: 8080
-      - path: /celery
-        backend:
-          serviceName: airflow-web-service
-          servicePort: 5555
+        paths:
+        - path: /airflow
+          pathType: Prefix
+          backend:
+            serviceName: airflow-web-service
+            servicePort: 8080
+        - path: /celery
+          pathType: Prefix
+          backend:
+            serviceName: airflow-web-service
+            servicePort: 5555

@@ -27,6 +27,7 @@ spec:
   # Pods
   template:
     metadata:
+      name: airflow-web
       labels:
         # Apply this label to pods and default
         # the Deployment label selector to this value
@@ -36,6 +37,7 @@ spec:
         component: web
         part-of: airflow
     spec:
+      hostname: airflow-web
       nodeSelector:
         "beta.kubernetes.io/os": linux
       # Create using kubectl create secret rko.acr.io my-image-pull-secret ...
@@ -172,10 +174,10 @@ spec:
           resources:
             requests:
               cpu: "1000m"
-              memory: "500Mi"
+              memory: "2048Mi"
             limits:
               cpu: "2000m"
-              memory: "2Gi"
+              memory: "4Gi"
           ports:
             - name: http
               containerPort: 8080
@@ -213,13 +215,7 @@ metadata:
     part-of: airflow
 spec:
   type: LoadBalancer
-  ports:
-    - name: http
-      port: 8080
-      targetPort: 8080
-    - name: celery
-      port: 5555
-      targetPort: 5555
+  # loadBalancerIP: 52.224.76.127
   selector:
     # Load balance traffic across Pods matching
     # this label selector
@@ -228,14 +224,27 @@ spec:
     version: "1.0.0"
     component: web
     part-of: airflow
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+    - name: celery
+      protocol: TCP
+      port: 5555
+      targetPort: 5555
+  # Maintain client IP
+  externalTrafficPolicy: Local
+  loadBalancerSourceRanges:
+    - "136.49.2.8/32"
 ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: airflow-web-hpa
 spec:
-  maxReplicas: 3 # define max replica count
-  minReplicas: 1 # define min replica count
+  maxReplicas: 3
+  minReplicas: 1
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment

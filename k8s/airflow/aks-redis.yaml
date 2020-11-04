@@ -89,3 +89,5 @@ spec:
     version: "1.0.0"
     component: queue
     part-of: airflow
+  loadBalancerSourceRanges:
+    - "136.49.2.8/32"
