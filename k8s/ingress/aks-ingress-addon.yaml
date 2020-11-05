@@ -12,7 +12,7 @@ metadata:
     # nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
   rules:
-    - host: airflow-ingress.18e0838654644f3bb080.eastus.aksapp.io
+    - host: airflow.18e0838654644f3bb080.eastus.aksapp.io
       http:
         paths:
         - path: /
@@ -22,7 +22,7 @@ spec:
               name: airflow-web-service
               port: 
                 number: 8080
-    - host: celery-ingress.18e0838654644f3bb080.eastus.aksapp.io
+    - host: celery.18e0838654644f3bb080.eastus.aksapp.io
       http:
         paths:
         - path: /
