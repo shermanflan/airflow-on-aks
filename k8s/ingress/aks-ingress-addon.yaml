@@ -1,0 +1,34 @@
+# Target services should be type ClusterIP
+# See https://docs.microsoft.com/en-us/azure/aks/http-application-routing
+apiVersion: networking.k8s.io/v1
+# apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: addon-ingress
+  annotations:
+    kubernetes.io/ingress.class: addon-http-application-routing
+    # nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # nginx.ingress.kubernetes.io/use-regex: "true"
+    # nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    - host: airflow-ingress.18e0838654644f3bb080.eastus.aksapp.io
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: airflow-web-service
+              port: 
+                number: 8080
+    - host: celery-ingress.18e0838654644f3bb080.eastus.aksapp.io
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: airflow-web-service
+              port: 
+                number: 5555

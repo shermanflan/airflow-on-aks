@@ -214,7 +214,7 @@ metadata:
     component: web
     part-of: airflow
 spec:
-  type: LoadBalancer
+  type: LoadBalancer # ClusterIP
   # loadBalancerIP: 52.224.76.127
   selector:
     # Load balance traffic across Pods matching
@@ -228,25 +228,24 @@ spec:
     - name: http
       protocol: TCP
       port: 8080
-      targetPort: 8080
+      # targetPort: 8080
     - name: celery
       protocol: TCP
       port: 5555
-      targetPort: 5555
-  # Maintain client IP
-  externalTrafficPolicy: Local
+      # targetPort: 5555
+  # externalTrafficPolicy: Local  # Maintain client IP
   loadBalancerSourceRanges:
     - "136.49.2.8/32"
----
-apiVersion: autoscaling/v1
-kind: HorizontalPodAutoscaler
-metadata:
-  name: airflow-web-hpa
-spec:
-  maxReplicas: 3
-  minReplicas: 1
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: airflow-web-deploy
-  targetCPUUtilizationPercentage: 60 # target CPU utilization
+# ---
+# apiVersion: autoscaling/v1
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: airflow-web-hpa
+# spec:
+#   maxReplicas: 3
+#   minReplicas: 1
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: airflow-web-deploy
+#   targetCPUUtilizationPercentage: 60 # target CPU utilization

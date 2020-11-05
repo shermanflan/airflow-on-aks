@@ -67,7 +67,8 @@ az aks create \
     --vm-set-type VirtualMachineScaleSets \
     --zones 1 2 3 \
     --no-ssh-key \
-    --attach-acr $REGISTRY
+    --attach-acr $REGISTRY \
+    --enable-addons http_application_routing
 
     # --generate-ssh-keys \
     # --admin-username azureuser \
@@ -75,7 +76,7 @@ az aks create \
     # TODO: 
     # az resource list --resource-type Microsoft.OperationalInsights/workspaces -o json
     # az aks enable-addons -a monitoring -n ExistingManagedCluster -g ExistingManagedClusterRG --workspace-resource-id "<LONG-ID>"
-    # --enable-addons monitoring \
+    # --enable-addons monitoring,http_application_routing \
 
 # echo "Creating $SPOT_POOL"
 # az aks nodepool add \
