@@ -53,10 +53,6 @@ az aks create \
     --location $LOCATION \
     --name $K8S_CLUSTER \
     --node-count 3 \
-    --enable-cluster-autoscaler \
-    --min-count 2 \
-    --max-count 5 \
-    --cluster-autoscaler-profile scale-down-unready-time=5m \
     --dns-name-prefix condesa \
     --kubernetes-version $K8S_VERSION \
     --load-balancer-sku Standard \
@@ -70,13 +66,19 @@ az aks create \
     --attach-acr $REGISTRY \
     --enable-addons http_application_routing
 
+    # --enable-cluster-autoscaler \
+    # --min-count 3 \
+    # --max-count 5 \
+    # --cluster-autoscaler-profile scale-down-unready-time=5m \
+
     # --generate-ssh-keys \
     # --admin-username azureuser \
     # --disable-rbac \
-    # TODO: 
+
+    # TODO: Monitoring
     # az resource list --resource-type Microsoft.OperationalInsights/workspaces -o json
     # az aks enable-addons -a monitoring -n ExistingManagedCluster -g ExistingManagedClusterRG --workspace-resource-id "<LONG-ID>"
-    # --enable-addons monitoring,http_application_routing \
+    # --enable-addons monitoring \
 
 # echo "Creating $SPOT_POOL"
 # az aks nodepool add \

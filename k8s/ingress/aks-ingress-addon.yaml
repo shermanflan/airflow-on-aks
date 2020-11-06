@@ -6,6 +6,7 @@ kind: Ingress
 metadata:
   name: addon-ingress
   annotations:
+    # Requires http_application_routing addon
     kubernetes.io/ingress.class: addon-http-application-routing
     # nginx.ingress.kubernetes.io/ssl-redirect: "false"
     # nginx.ingress.kubernetes.io/use-regex: "true"

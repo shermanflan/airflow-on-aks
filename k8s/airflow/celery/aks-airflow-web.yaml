@@ -234,8 +234,8 @@ spec:
       port: 5555
       # targetPort: 5555
   # externalTrafficPolicy: Local  # Maintain client IP
-  loadBalancerSourceRanges:
-    - "136.49.2.8/32"
+  # loadBalancerSourceRanges:
+  #   - "136.49.2.8/32"
 # ---
 # apiVersion: autoscaling/v1
 # kind: HorizontalPodAutoscaler
