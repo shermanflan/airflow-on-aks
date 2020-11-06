@@ -64,7 +64,8 @@ az aks create \
     --zones 1 2 3 \
     --no-ssh-key \
     --attach-acr $REGISTRY \
-    --enable-addons http_application_routing
+    --enable-addons http_application_routing,monitoring \
+    --workspace-resource-id "${WORKSPACE_ID}"
 
     # --enable-cluster-autoscaler \
     # --min-count 3 \
@@ -75,10 +76,13 @@ az aks create \
     # --admin-username azureuser \
     # --disable-rbac \
 
-    # TODO: Monitoring
-    # az resource list --resource-type Microsoft.OperationalInsights/workspaces -o json
-    # az aks enable-addons -a monitoring -n ExistingManagedCluster -g ExistingManagedClusterRG --workspace-resource-id "<LONG-ID>"
-    # --enable-addons monitoring \
+# echo "Setting up diagnostic settings for ${K8S_CLUSTER}"
+# az monitor diagnostic-settings create \
+#         --name auto-monitor \
+#         --resource $(az resource list --name ${K8S_CLUSTER} -o json | jq -r '.[0].id') \
+#         --logs @${LOG_CONFIG} \
+#         --metrics @${METRICS_CONFIG} \
+#         --workspace "${WORKSPACE_ID}"
 
 # echo "Creating $SPOT_POOL"
 # az aks nodepool add \

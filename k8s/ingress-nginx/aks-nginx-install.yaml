@@ -36,7 +36,7 @@ metadata:
     app.kubernetes.io/component: controller
   name: ingress-nginx-controller
   namespace: ingress-nginx
-data:
+# data:
 ---
 # Source: ingress-nginx/templates/clusterrole.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -273,7 +273,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
+  # annotations:
   labels:
     helm.sh/chart: ingress-nginx-3.8.0
     app.kubernetes.io/name: ingress-nginx

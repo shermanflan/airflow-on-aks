@@ -214,7 +214,7 @@ metadata:
     component: web
     part-of: airflow
 spec:
-  type: LoadBalancer # ClusterIP
+  type: ClusterIP # LoadBalancer
   # loadBalancerIP: 52.224.76.127
   selector:
     # Load balance traffic across Pods matching
