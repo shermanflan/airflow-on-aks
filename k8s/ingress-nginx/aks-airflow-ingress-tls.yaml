@@ -1,0 +1,47 @@
+# See https://cert-manager.io/docs/tutorials/acme/ingress/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: airflow-ingress-tls
+  namespace: airflow-tls
+  annotations:
+    # add an annotation indicating the issuer to use.
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx # use only with k8s version >= 1.18.0
+  # These secrets are created by cert-manager and do not need to be
+  # created beforehand.
+  tls:
+    - hosts:
+      - airflow.rikguz.com
+      secretName: airflow-secret # < cert-manager will store the created certificate in this secret
+    - hosts:
+      - celery.rikguz.com
+      secretName: celery-secret # < cert-manager will store the created certificate in this secret
+  rules:
+    - host: airflow.rikguz.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: airflow-web-service
+              port: 
+                number: 8080
+    - host: celery.rikguz.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: airflow-web-service
+              port:
+                number: 5555
+  defaultBackend:
+      service:
+        name: airflow-web-service
+        port: 
+          number: 8080    

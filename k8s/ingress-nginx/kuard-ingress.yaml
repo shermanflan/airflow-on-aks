@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kuard
+  namespace: cert-manager
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+spec:
+  ingressClassName: nginx # use only with k8s version >= 1.18.0
+  # This secret is created by cert-manager and does not need to be
+  # created beforehand.
+  tls:
+  - hosts:
+    - kuard.rikguz.com
+    secretName: kuard-tls
+  rules:
+  - host: kuard.rikguz.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+            service:
+              name: kuard
+              port: 
+                number: 80
+  defaultBackend:
+      service:
+        name: kuard
+        port: 
+          number: 80

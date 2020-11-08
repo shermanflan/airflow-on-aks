@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-workers-deploy
+  namespace: airflow-tls
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      name: airflow-workers
+      instance: airflow-workers-celery
+      version: "1.0.0"
+      component: worker
+      part-of: airflow
+  strategy:
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        name: airflow-workers
+        instance: airflow-workers-celery
+        version: "1.0.0"
+        component: worker
+        part-of: airflow
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      volumes:
+        - name: "az-dags"
+          persistentVolumeClaim:
+            claimName: azure-claim-dags
+        - name: "az-scripts"
+          persistentVolumeClaim:
+            claimName: azure-claim-scripts
+      initContainers:
+        - name: airflow-wait-web
+          image: busybox:1.32.0
+          command: ['sh', '-c', "until nslookup airflow-web-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-web-service; sleep 5; done"]
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "250Mi"
+            limits:
+              cpu: "500m"
+              memory: "500Mi"
+      containers:
+        - name: airflow
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          imagePullPolicy: Always  # IfNotPresent
+          command:
+              - "airflow"
+          args:
+              - worker
+              - -q 
+              - airq1,airq2
+          volumeMounts:
+            - name: "az-dags"
+              mountPath: "/opt/airflow/dags"
+            - name: "az-scripts"
+              mountPath: "/opt/airflow/scripts"
+          env:
+            - name: AIRFLOW__CORE__LOGGING_LEVEL
+              value: "INFO"
+            - name: AIRFLOW__CORE__EXECUTOR
+              value: "CeleryExecutor"
+            - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-service/airflow"
+            - name: AIRFLOW__CELERY__BROKER_URL
+              value: "redis://airflow-redis-service:6379/0"
+            - name: AIRFLOW__CELERY__RESULT_BACKEND
+              value: "db+postgresql://sa:pwd@airflow-postgres-service/airflow"
+            - name: AIRFLOW__CORE__FERNET_KEY
+              value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
+            - name: AIRFLOW_CORE_STORE_SERIALIZED_DAGS
+              value: "True"
+            - name: AIRFLOW_CORE_STORE_DAG_CODE
+              value: "True"
+            - name: AIRFLOW_CORE_MIN_SERIALIZED_DAG_FETCH_INTERVAL
+              value: "30"
+            - name: AIRFLOW__SMTP__SMTP_HOST
+              value: "airflow-smtp-svc"
+            - name: AIRFLOW__SMTP__SMTP_STARTTLS
+              value: "False"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          # TODO: Consider readiness or startup probe into database
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8080
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+          #   failureThreshold: 3
+          #   successThreshold: 1
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #       - airflow
+          #       - info
+          #       - --anonymize
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: airflow-workers-hpa
+  namespace: airflow-tls
+spec:
+  maxReplicas: 3 # define max replica count
+  minReplicas: 1 # define min replica count
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: airflow-workers-deploy
+  targetCPUUtilizationPercentage: 45 # target CPU utilization

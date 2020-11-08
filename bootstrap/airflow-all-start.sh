@@ -5,7 +5,7 @@
 # https://www.gradiant.org/en/blog/apache-airflow-docker-en/
 # https://towardsdatascience.com/apache-airflow-and-postgresql-with-docker-and-docker-compose-5651766dfa96
 
-INIT_FILE=.airflowinitialized
+INIT_FILE=$AIRFLOW_HOME/init/.airflowinitialized
 
 if [ ! -f $INIT_FILE ]
   then
@@ -16,7 +16,6 @@ if [ ! -f $INIT_FILE ]
 #    airflow upgradedb  # recommended for prod
 
     # Connections
-    # TODO: Consider CLI command 'airflow connections'.
     python "$AIRFLOW_HOME/scripts/airflow-db-init.py"
 
     echo 'Adding pools...'
@@ -26,7 +25,15 @@ if [ ! -f $INIT_FILE ]
 #    if [ "$AIRFLOW__WEBSERVER__RBAC" == "True" ]
 #      then
 #
-#        echo 'Adding admin users for RBAC...'
+#        echo 'Adding admin user for RBAC...'
+#
+#        airflow create_user \
+#          --role="Admin" \
+#          --username="condesa.1931_hotmail.com#EXT#@condesa1931hotmail.onmicrosoft.com" \
+#          --email="condesa.1931@hotmail.com" \
+#          --firstname="Ricardo" \
+#          --lastname="Guzman" \
+#          --password="pwd"
 #
 #        airflow create_user \
 #          --role="Admin" \
@@ -44,5 +51,17 @@ fi
 echo 'Starting Airflow webserver...'
 
 airflow webserver &
+
+echo 'Running the Airflow scheduler...'
+
+airflow scheduler &
+
+echo 'Running workers...'
+
+airflow worker -q airq1,airq2 -cn airworker0 --daemon & # 1 worker per host works
+
+echo 'Starting Flower UI...'
+
+airflow flower & # Add --basic_auth=user1:password1,user2:password2"
 
 wait

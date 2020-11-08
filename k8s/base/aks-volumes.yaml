@@ -1,0 +1,76 @@
+# See: https://docs.microsoft.com/en-us/azure/aks/azure-files-volume#mount-options
+# See: https://docs.microsoft.com/en-us/azure/aks/concepts-storage#storage-classes
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: azure-file-dags
+  namespace: airflow-tls
+  labels:
+      volume: azure-file-dags
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 1Gi
+  storageClassName: azurefile
+  azureFile:
+    secretName: az-file-secret
+    shareName: airflow-dags
+    readOnly: false
+  mountOptions:
+    - dir_mode=0777
+    - file_mode=0777
+    - uid=1000
+    - gid=1000
+    - mfsymlinks
+    - nobrl
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: azure-file-scripts
+  namespace: airflow-tls
+  labels:
+      volume: azure-file-scripts
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 1Gi
+  storageClassName: azurefile
+  azureFile:
+    secretName: az-file-secret
+    shareName: airflow-scripts
+    readOnly: false
+  mountOptions:
+    - dir_mode=0777
+    - file_mode=0777
+    - uid=1000
+    - gid=1000
+    - mfsymlinks
+    - nobrl
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: azure-file-init
+  namespace: airflow-tls
+  labels:
+      volume: azure-file-init
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 1Gi
+  storageClassName: azurefile
+  azureFile:
+    secretName: az-file-secret
+    shareName: airflow-init
+    readOnly: false
+  mountOptions:
+    - dir_mode=0777
+    - file_mode=0777
+    - uid=1000
+    - gid=1000
+    - mfsymlinks
+    - nobrl

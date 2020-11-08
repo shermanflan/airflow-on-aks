@@ -1,0 +1,94 @@
+# TODO: Make into cluster?
+# Testing
+# kubectl exec redis-0 -c redis -- redis-cli -p 6379 set foo 10
+# kubectl exec redis-2 -c redis -- redis-cli -p 6379 get foo
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deploy
+  namespace: airflow-tls
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: redis
+      instance: airflow-redis
+      version: "1.0.0"
+      component: queue
+      part-of: airflow
+  strategy:
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 0
+    type: RollingUpdate
+  minReadySeconds: 60
+  progressDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        name: redis
+        instance: airflow-redis
+        version: "1.0.0"
+        component: queue
+        part-of: airflow
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      containers:
+        - name: redis
+          image: redis:6.0
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          ports:
+            - containerPort: 6379
+              name: http
+              protocol: TCP
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8080
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+          #   failureThreshold: 3
+          #   successThreshold: 1
+          # livenessProbe:
+          #   exec:
+          #     command:
+          #       - airflow
+          #       - info
+          #       - --anonymize
+          #   initialDelaySeconds: 5
+          #   periodSeconds: 5
+---
+# TODO: Make internal only (ClusterIP?)
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-redis-service
+  namespace: airflow-tls
+  labels:
+    name: redis
+    instance: airflow-redis
+    version: "1.0.0"
+    component: queue
+    part-of: airflow
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 6379
+      targetPort: 6379
+  selector:
+    name: redis
+    instance: airflow-redis
+    version: "1.0.0"
+    component: queue
+    part-of: airflow
+  loadBalancerSourceRanges:
+    - "136.49.2.8/32"
