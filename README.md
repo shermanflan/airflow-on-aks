@@ -89,7 +89,7 @@ For more details, refer to the
 
 ## Deploy to Azure Kubernetes Service
 Multiple Kubernetes manifest files have been defined under the [k8s](k8s/) 
-folder with support the following features:
+folder with support for the following features:
 
 - Airflow 1.10.2 running as a multi-tier k8s [service](k8s/airflow)
 - TLS termination facilitated by the [nginx ingress](k8s/ingress-nginx) 
