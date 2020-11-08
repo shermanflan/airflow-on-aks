@@ -5,7 +5,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: airflow-nginx-ingress
+  name: airflow-ingress
   namespace: default
   # annotations:
   #   kubernetes.io/ingress.class: nginx
@@ -37,16 +37,16 @@ spec:
               name: airflow-web-service
               port: 
                 number: 8080
-    # - host: celery.0cf33844e91741c88f93.eastus.aksapp.io
-    #   http:
-    #     paths:
-    #     - path: /
-    #       pathType: Prefix
-    #       backend:
-    #         service:
-    #           name: airflow-web-service
-    #           port:
-    #             number: 5555
+    - host: celery.0cf33844e91741c88f93.eastus.aksapp.io
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: airflow-web-service
+              port:
+                number: 5555
   defaultBackend:
       service:
         name: airflow-web-service

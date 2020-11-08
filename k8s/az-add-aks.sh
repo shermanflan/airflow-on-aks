@@ -64,7 +64,7 @@ az aks create \
     --zones 1 2 3 \
     --no-ssh-key \
     --attach-acr $REGISTRY \
-    --enable-addons http_application_routing,monitoring \
+    --enable-addons monitoring \
     --workspace-resource-id "${WORKSPACE_ID}"
 
     # --enable-cluster-autoscaler \
@@ -112,40 +112,129 @@ az aks get-credentials \
     --name $K8S_CLUSTER \
     --overwrite-existing
 
+echo "Creating ${INGRESS_NS} namespace"
+kubectl create namespace ${INGRESS_NS}
+
 echo "Creating Azure file shares secret for $AKS_PERS_STORAGE_ACCOUNT_NAME"
 kubectl create secret generic \
     az-file-secret \
+    -n ${INGRESS_NS} \
     --from-literal=azurestorageaccountname=$AKS_PERS_STORAGE_ACCOUNT_NAME \
     --from-literal=azurestorageaccountkey=$STORAGE_KEY
 
 echo "Creating Azure OAuth secrets for tenant $AZURE_TENANT_ID"
 kubectl create secret generic \
     az-oauth-secret \
+    -n ${INGRESS_NS} \
     --from-literal=azure-tenant-id=$AZURE_TENANT_ID \
     --from-literal=azure-app-id=$AZURE_APP_ID \
     --from-literal=azure-app-key=$AZURE_APP_KEY
 
 # Tls
-declare DNS_ZONE=$(az resource list --resource-group ${RESOURCE_GROUP_NODES} --resource-type Microsoft.Network/dnszones -o json | jq -r '.[0].name')
+# declare DNS_ZONE=$(az resource list \
+#                     --resource-group ${RESOURCE_GROUP_NODES} \
+#                     --resource-type Microsoft.Network/dnszones \
+#                     -o json | jq -r '.[0].name')
 
-echo "Generating self-signed cert for ${AIRFLOW_HOST}.${DNS_ZONE}"
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout ${OUTPUT}/airflow/${KEY_FILE} \
-    -out ${OUTPUT}/airflow/${CERT_FILE} \
-    -subj "/CN=${AIRFLOW_HOST}.${DNS_ZONE}/O=RKOSelfSigned1"
+# echo "Generating self-signed cert for ${AIRFLOW_HOST}.${DNS_ZONE}"
+# openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#     -keyout ${OUTPUT}/airflow/${KEY_FILE} \
+#     -out ${OUTPUT}/airflow/${CERT_FILE} \
+#     -subj "/CN=${AIRFLOW_HOST}.${DNS_ZONE}"
 
-echo "Creating secrets for ${AIRFLOW_HOST}.${DNS_ZONE}"
-kubectl create secret tls ${AIRFLOW_CERT_NAME} \
-    --key ${OUTPUT}/airflow/${KEY_FILE} \
-    --cert ${OUTPUT}/airflow/${CERT_FILE}
+# echo "Creating secrets for ${AIRFLOW_HOST}.${DNS_ZONE}"
+# kubectl create secret tls ${AIRFLOW_CERT_NAME} \
+#     --key ${OUTPUT}/airflow/${KEY_FILE} \
+#     --cert ${OUTPUT}/airflow/${CERT_FILE}
 
-echo "Generating self-signed cert for ${CELERY_HOST}.${DNS_ZONE}"
-openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-    -keyout ${OUTPUT}/celery/${KEY_FILE} \
-    -out ${OUTPUT}/celery/${CERT_FILE} \
-    -subj "/CN=${CELERY_HOST}.${DNS_ZONE}/O=RKOSelfSigned2"
+# echo "Generating self-signed cert for ${CELERY_HOST}.${DNS_ZONE}"
+# openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#     -keyout ${OUTPUT}/celery/${KEY_FILE} \
+#     -out ${OUTPUT}/celery/${CERT_FILE} \
+#     -subj "/CN=${CELERY_HOST}.${DNS_ZONE}"
 
-echo "Creating secrets for ${CELERY_HOST}.${DNS_ZONE}"
-kubectl create secret tls ${CELERY_CERT_NAME} \
-    --key ${OUTPUT}/celery/${KEY_FILE} \
-    --cert ${OUTPUT}/celery/${CERT_FILE}
+# echo "Creating secrets for ${CELERY_HOST}.${DNS_ZONE}"
+# kubectl create secret tls ${CELERY_CERT_NAME} \
+#     --key ${OUTPUT}/celery/${KEY_FILE} \
+#     --cert ${OUTPUT}/celery/${CERT_FILE}
+
+# echo "Generating self-signed cert for kuard.${DNS_ZONE}"
+# openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#     -keyout ${OUTPUT}/kuard/${KEY_FILE} \
+#     -out ${OUTPUT}/kuard/${CERT_FILE} \
+#     -subj "/CN=kuard.${DNS_ZONE}"
+
+# echo "Creating secrets for kuard.${DNS_ZONE}"
+# kubectl create secret tls quickstart-example-tls \
+#     --key ${OUTPUT}/kuard/${KEY_FILE} \
+#     --cert ${OUTPUT}/kuard/${CERT_FILE}
+
+echo "Updating Helm repositories"
+# helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+# helm repo add jetstack https://charts.jetstack.io
+helm repo update
+
+# See https://docs.microsoft.com/en-us/azure/aks/ingress-tls
+echo "Installing k8s' nginx via Helm repository"
+helm install ${NGINX_RELEASE} ingress-nginx/ingress-nginx \
+    --namespace ${INGRESS_NS} \
+    --set controller.replicaCount=1 \
+    --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
+    --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux \
+    --set controller.admissionWebhooks.patch.nodeSelector."beta\.kubernetes\.io/os"=linux
+
+# See https://cert-manager.io/docs/installation/kubernetes/
+echo "Installing cert-manager via Helm repository"
+helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace ${INGRESS_NS} \
+  --version v1.0.4 \
+  --set installCRDs=true \
+  --set nodeSelector."beta\.kubernetes\.io/os"=linux
+
+# See https://docs.microsoft.com/en-us/azure/dns/dns-getstarted-cli
+# See https://docs.microsoft.com/en-us/azure/dns/dns-zones-records
+# See https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns
+declare EXTERNAL_IP=$(kubectl get svc ${NGINX_RELEASE}-ingress-nginx-controller \
+                        -n ${INGRESS_NS} \
+                        -o jsonpath='{..ip}')  # k8s' nginx
+
+# echo "Creating DNS zone ${DNS_ZONE}"
+# az network dns zone create \
+#     -g ${RESOURCE_GROUP_NODES} \
+#     -n ${DNS_ZONE}
+
+echo "Updating DNS host record for ${AIRFLOW_HOST}.${DNS_ZONE} on ${EXTERNAL_IP}"
+az network dns record-set a delete \
+    -n ${AIRFLOW_HOST} \
+    -g airflow-sandbox \
+    -z ${DNS_ZONE} \
+    --yes
+
+az network dns record-set a add-record \
+    -n ${AIRFLOW_HOST} \
+    -g airflow-sandbox \
+    -z ${DNS_ZONE} \
+    --ttl 60 \
+    -a ${EXTERNAL_IP}
+
+echo "Updating DNS host record for ${CELERY_HOST}.${DNS_ZONE} on ${EXTERNAL_IP}"
+az network dns record-set a delete \
+    -n ${CELERY_HOST} \
+    -g airflow-sandbox \
+    -z ${DNS_ZONE} \
+    --yes
+
+az network dns record-set a add-record \
+    -n ${CELERY_HOST} \
+    -g airflow-sandbox \
+    -z ${DNS_ZONE} \
+    --ttl 60 \
+    -a ${EXTERNAL_IP}
+
+# Uninstall cert-manager
+# helm --namespace cert-manager delete cert-manager
+# kubectl delete namespace cert-manager
+
+# Uninstall nginx
+# helm uninstall ${NGINX_RELEASE}

@@ -4,6 +4,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: azure-file-dags
+  namespace: airflow-tls
   labels:
       volume: azure-file-dags
 spec:
@@ -28,6 +29,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: azure-file-scripts
+  namespace: airflow-tls
   labels:
       volume: azure-file-scripts
 spec:
@@ -52,6 +54,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: azure-file-init
+  namespace: airflow-tls
   labels:
       volume: azure-file-init
 spec:

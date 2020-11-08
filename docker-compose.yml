@@ -26,5 +26,5 @@ services:
             - AIRFLOW__WEBSERVER__AUTH_BACKEND=airflow.api.auth.backend.deny_all
         volumes:
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags
-            - ~/personal/github/airflow-local/scripts:/opt/airflow/scripts
-            - ~/personal/github/airflow-local/scripts/data:/opt/airflow/init
+            - ~/personal/github/airflow-local/bootstrap:/opt/airflow/scripts
+            - ~/personal/github/airflow-local/bootstrap/metadata:/opt/airflow/init

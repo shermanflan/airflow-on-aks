@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir --user -r ${AIRFLOW_HOME}/dev-requirements.txt \
     && rm /${AIRFLOW_HOME}/dev-requirements.txt \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --chown=airflow:airflow scripts/webserver_config.py ${AIRFLOW_HOME}/webserver_config.py
+COPY --chown=airflow:airflow bootstrap/webserver_config.py ${AIRFLOW_HOME}/webserver_config.py
 RUN chmod a+x ${AIRFLOW_HOME}/webserver_config.py
 
 # This adds AIRFLOW home to the PYTHONPATH so that modules in the

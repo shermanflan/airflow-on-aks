@@ -5,7 +5,7 @@ kind: Deployment
 metadata:
   # Unique key of the Deployment instance
   name: airflow-web-deploy
-  namespace: default
+  namespace: airflow-tls
 spec:
   # Number of pods which should exist at all times
   replicas: 1
@@ -207,6 +207,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: airflow-web-service
+  namespace: airflow-tls
   labels:
     name: airflow-web-service
     instance: airflow-web-celery

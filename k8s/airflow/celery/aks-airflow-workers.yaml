@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: airflow-workers-deploy
-  namespace: default
+  namespace: airflow-tls
 spec:
   replicas: 2
   selector:
@@ -113,6 +113,7 @@ apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: airflow-workers-hpa
+  namespace: airflow-tls
 spec:
   maxReplicas: 3 # define max replica count
   minReplicas: 1 # define min replica count
