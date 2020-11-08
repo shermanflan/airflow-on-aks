@@ -1,5 +1,5 @@
 # airflow-local
-Repo for running airflow for the following use cases:
+Repo with a customized airflow image aimed at the following use cases:
 
 - Local development via docker-compose
 - Azure Container Instances
