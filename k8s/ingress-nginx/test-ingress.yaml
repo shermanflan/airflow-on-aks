@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kuard
+  namespace: default
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # cert-manager.io/issuer: "letsencrypt-staging"
+spec:
+  ingressClassName: nginx # use only with k8s version >= 1.18.0
+  # This needs to be a valid self-signed certificate to start.
+  tls:
+  - hosts:
+    - celery.0e3291ad39ab4cdbab81.eastus.aksapp.io
+    secretName: quickstart-example-tls
+  rules:
+  - host: celery.0e3291ad39ab4cdbab81.eastus.aksapp.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+            service:
+              name: kuard
+              port: 
+                number: 80
+  defaultBackend:
+      service:
+        name: kuard
+        port: 
+          number: 80

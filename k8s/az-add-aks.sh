@@ -20,10 +20,10 @@ docker login $REGISTRY.azurecr.io \
     -p "$(az acr credential show --name $REGISTRY | jq -r '.passwords[0].value')"
 
 echo "Publishing ${IMAGE} to ${REGISTRY}"
+docker push $REGISTRY.azurecr.io/$IMAGE
 # az acr build \
 #     --registry $REGISTRY \
 #     --image $IMAGE .
-docker push $REGISTRY.azurecr.io/$IMAGE
 
 # echo "Publishing ${IMAGE2} to ${REGISTRY}"
 # sed -i -e '/APP_THEME = "cyborg/s/^#* //' $WEB_CONFIG
@@ -52,7 +52,7 @@ az aks create \
     --node-resource-group $RESOURCE_GROUP_NODES \
     --location $LOCATION \
     --name $K8S_CLUSTER \
-    --node-count 3 \
+    --node-count 4 \
     --dns-name-prefix condesa \
     --kubernetes-version $K8S_VERSION \
     --load-balancer-sku Standard \
@@ -71,7 +71,7 @@ az aks create \
     # --min-count 3 \
     # --max-count 5 \
     # --cluster-autoscaler-profile scale-down-unready-time=5m \
-
+    # --enable-addons http_application_routing,monitoring \
     # --generate-ssh-keys \
     # --admin-username azureuser \
     # --disable-rbac \
@@ -124,3 +124,28 @@ kubectl create secret generic \
     --from-literal=azure-tenant-id=$AZURE_TENANT_ID \
     --from-literal=azure-app-id=$AZURE_APP_ID \
     --from-literal=azure-app-key=$AZURE_APP_KEY
+
+# Tls
+declare DNS_ZONE=$(az resource list --resource-group ${RESOURCE_GROUP_NODES} --resource-type Microsoft.Network/dnszones -o json | jq -r '.[0].name')
+
+echo "Generating self-signed cert for ${AIRFLOW_HOST}.${DNS_ZONE}"
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout ${OUTPUT}/airflow/${KEY_FILE} \
+    -out ${OUTPUT}/airflow/${CERT_FILE} \
+    -subj "/CN=${AIRFLOW_HOST}.${DNS_ZONE}/O=RKOSelfSigned1"
+
+echo "Creating secrets for ${AIRFLOW_HOST}.${DNS_ZONE}"
+kubectl create secret tls ${AIRFLOW_CERT_NAME} \
+    --key ${OUTPUT}/airflow/${KEY_FILE} \
+    --cert ${OUTPUT}/airflow/${CERT_FILE}
+
+echo "Generating self-signed cert for ${CELERY_HOST}.${DNS_ZONE}"
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout ${OUTPUT}/celery/${KEY_FILE} \
+    -out ${OUTPUT}/celery/${CERT_FILE} \
+    -subj "/CN=${CELERY_HOST}.${DNS_ZONE}/O=RKOSelfSigned2"
+
+echo "Creating secrets for ${CELERY_HOST}.${DNS_ZONE}"
+kubectl create secret tls ${CELERY_CERT_NAME} \
+    --key ${OUTPUT}/celery/${KEY_FILE} \
+    --cert ${OUTPUT}/celery/${CERT_FILE}

@@ -11,20 +11,29 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def run(coins, C):
-    memo = [
-        [n for n in range(C+1)]
-        for _ in coins
-    ]
+def run(nums, target):
 
-    for i_coin, coin in enumerate(coins[1:], start=1):
-        for coin_sum in range(C+1):
-            if coin <= coin_sum:
-                memo[i_coin][coin_sum] = min(memo[i_coin][coin_sum - coin] + 1,
-                                             memo[i_coin-1][coin_sum])
+    start, mid, end = 0, (len(nums)-1)//2, len(nums)-1
+
+    while start <= end:
+
+        mid = (end-start)//2 + start
+
+        if nums[mid] == target:
+            return mid
+
+        if nums[start] <= nums[mid]:
+            if target >= nums[start] and target < nums[mid]:
+                end = mid - 1
             else:
-                memo[i_coin][coin_sum] = memo[i_coin-1][coin_sum]
-    return memo[-1][-1]
+                start = mid + 1
+        else:
+            if target > nums[mid] and target <= nums[end]:
+                start = mid + 1
+            else:
+                end = mid - 1
+
+    return -1
 
 
 if __name__ == '__main__':
@@ -38,4 +47,4 @@ if __name__ == '__main__':
     # r.set('rko', '21')
     # logger.info(f"RESULT: {r.get('foo')}")
 
-    logger.info(run([1, 5, 6, 8], 21))
+    logger.info(run([5,1,2,3,4], 1))
