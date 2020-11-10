@@ -1,39 +1,61 @@
 import logging
+import os
+from time import sleep
 
 from cryptography.fernet import Fernet
 import redis
 
+log_level_code = getattr(logging, os.environ['LOG_LEVEL'], logging.INFO)
 logging.basicConfig(
     format='%(asctime)s %(levelname)s [%(name)s]: %(message)s'
     , datefmt='%Y-%m-%d %I:%M:%S %p'
-    , level=logging.DEBUG)
+    , level=log_level_code)
 
 logger = logging.getLogger(__name__)
 
 
-def run(nums, target):
+def run_pipeline():
+    """
+    See https://docs.microsoft.com/en-us/python/api/overview/azure/datafactory
 
-    start, mid, end = 0, (len(nums)-1)//2, len(nums)-1
+    :return:
+    """
+    from azure.common.credentials import ServicePrincipalCredentials
+    from azure.mgmt.datafactory import DataFactoryManagementClient
 
-    while start <= end:
+    subscription_id = os.environ['AZURE_SUBSCRIPTION']
+    credentials = ServicePrincipalCredentials(
+        client_id=os.environ['AZURE_APP_ID']
+        , secret=os.environ['AZURE_APP_KEY']
+        , tenant=os.environ['AZURE_TENANT_ID'])
+    adf_client = DataFactoryManagementClient(credentials, subscription_id)
 
-        mid = (end-start)//2 + start
+    run_response = adf_client.pipelines.create_run(
+        resource_group_name='airflow-sandbox'
+        , factory_name='bshGeonamestoASDB'
+        , pipeline_name='LoadGeographies')
 
-        if nums[mid] == target:
-            return mid
+    run = adf_client.pipeline_runs.get(
+        resource_group_name='airflow-sandbox'
+        , factory_name='bshGeonamestoASDB'
+        , run_id=run_response.run_id)
 
-        if nums[start] <= nums[mid]:
-            if target >= nums[start] and target < nums[mid]:
-                end = mid - 1
-            else:
-                start = mid + 1
-        else:
-            if target > nums[mid] and target <= nums[end]:
-                start = mid + 1
-            else:
-                end = mid - 1
+    while run.status not in ('Failed', 'Succeeded'):
 
-    return -1
+        sleep(60)
+
+        run = adf_client.pipeline_runs.get(
+            resource_group_name='airflow-sandbox'
+            , factory_name='bshGeonamestoASDB'
+            , run_id=run_response.run_id)
+
+        logger.info(f"status: {run.status}")
+        logger.info(f"start: {run.run_start}")
+        logger.info(f"end: {run.run_end}")
+        logger.info(f"duration: {run.duration_in_ms}")
+        logger.info(f"message: {run.message}")
+
+    return 0
 
 
 if __name__ == '__main__':
@@ -47,4 +69,4 @@ if __name__ == '__main__':
     # r.set('rko', '21')
     # logger.info(f"RESULT: {r.get('foo')}")
 
-    logger.info(run([5,1,2,3,4], 1))
+    run_pipeline()
