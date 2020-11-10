@@ -35,14 +35,9 @@ def run_pipeline():
         , factory_name='bshGeonamestoASDB'
         , pipeline_name='LoadGeographies')
 
-    run = adf_client.pipeline_runs.get(
-        resource_group_name='airflow-sandbox'
-        , factory_name='bshGeonamestoASDB'
-        , run_id=run_response.run_id)
+    while True:
 
-    while run.status not in ('Failed', 'Succeeded'):
-
-        sleep(60)
+        sleep(30)
 
         run = adf_client.pipeline_runs.get(
             resource_group_name='airflow-sandbox'
@@ -54,6 +49,9 @@ def run_pipeline():
         logger.info(f"end: {run.run_end}")
         logger.info(f"duration: {run.duration_in_ms}")
         logger.info(f"message: {run.message}")
+
+        if run.status in ('Failed', 'Succeeded'):
+            break
 
     return 0
 
