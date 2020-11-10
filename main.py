@@ -47,7 +47,7 @@ def run_pipeline():
         logger.info(f"status: {run.status}")
         logger.info(f"start: {run.run_start}")
         logger.info(f"end: {run.run_end}")
-        logger.info(f"duration: {run.duration_in_ms}")
+        logger.info(f"duration: {run.duration_in_ms//1000}")
         logger.info(f"message: {run.message}")
 
         if run.status in ('Failed', 'Succeeded'):
