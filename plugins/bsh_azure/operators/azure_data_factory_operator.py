@@ -1,10 +1,9 @@
 import os
 from time import sleep
 
+from airflow.exceptions import AirflowException
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
-
-from airflow.exceptions import AirflowException
 
 from bsh_azure.hooks.azure_data_factory_hook import AzureDataFactoryHook
 from bsh_azure.sensors.azure_data_factory_sensor import AzureDataFactorySensor
