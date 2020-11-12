@@ -48,7 +48,7 @@ A json key file has been created for authentication. This enables `contrib`
 Azure operators to connect to the tenant. To generate:
 
 1. Use az cli to login
-2. Run: `ad sp create-for-rbac --sdk-auth > airflow.azureauth`
+2. Run: `az ad sp create-for-rbac --sdk-auth > airflow.azureauth`
 
 ## Deploy to Azure Container Instances
 It is possible to deploy a set of Airflow containers to a single ACI group. 
