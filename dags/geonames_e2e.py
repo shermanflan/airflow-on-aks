@@ -1,6 +1,8 @@
 """
 ## geonames_e2e.py
-- Example using Azure operators for ADF and AKS.
+Example using Azure operators for ADF and AKS.
+
+- Code inspired by [contrib repo](https://github.com/apache/airflow/tree/1.10.12/airflow/contrib).
 """
 from datetime import date, datetime, timedelta
 
