@@ -15,7 +15,7 @@ POLL_SECONDS = 30
 # See https://docs.microsoft.com/en-us/python/api/overview/azure/datafactory
 # https://airflow.readthedocs.io/en/1.10.12/plugins.html
 class DataFactoryOperator(BaseOperator):
-    template_fields = ()
+    template_fields = []
 
     @apply_defaults
     def __init__(self,
@@ -27,6 +27,20 @@ class DataFactoryOperator(BaseOperator):
                  poll_seconds=30,
                  *args,
                  **kwargs):
+        """
+        Avoid making any calls out to a service via a hook or any other
+        code in the constructor. This will play nice with the Airflow DAG
+        scan loop, which invoke operator constructors.
+
+        :param resource_group_name:
+        :param factory_name:
+        :param pipeline_name:
+        :param adf_conn_id:
+        :param no_wait:
+        :param poll_seconds:
+        :param args:
+        :param kwargs:
+        """
         super(DataFactoryOperator, self).__init__(*args, **kwargs)
 
         self.resource_group_name = resource_group_name

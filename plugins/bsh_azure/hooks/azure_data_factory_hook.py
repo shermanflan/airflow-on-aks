@@ -9,6 +9,10 @@ from airflow.hooks.base_hook import BaseHook
 
 
 class AzureDataFactoryHook(BaseHook):
+    """
+    There are no required methods that BaseHook-derived hook must
+    implement.
+    """
 
     def __init__(self, conn_id='azure_data_factory_default'):
         self.conn_id = conn_id
