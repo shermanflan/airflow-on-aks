@@ -1,4 +1,5 @@
 
+from airflow.exceptions import AirflowException
 from airflow.sensors.base_sensor_operator import BaseSensorOperator
 from airflow.utils.decorators import apply_defaults
 
@@ -6,6 +7,9 @@ from bsh_azure.hooks.azure_data_factory_hook import AzureDataFactoryHook
 
 
 class AzureDataFactorySensor(BaseSensorOperator):
+    # For jinja support, such as:
+    # {{ task_instance.xcom_pull(task_ids='foo', key='some_name') }}
+    template_fields = ['run_id']
 
     @apply_defaults
     def __init__(self,
@@ -31,11 +35,13 @@ class AzureDataFactorySensor(BaseSensorOperator):
             , factory_name=self.factory_name
             , run_id=self.run_id)
 
-        self.log.info("Polling data factory pipeline run status.")
-        self.log.info(f"status: {run.status}")
-        self.log.info(f"start: {run.run_start}")
-        self.log.info(f"end: {run.run_end}")
-        self.log.info(f"duration: {run.duration_in_ms // 1000}")
-        self.log.info(f"message: {run.message}")
+        if run.status == 'Failed':
+            raise AirflowException(f"{self.factory_name}: {run.message}.")
+        elif run.status == 'Succeeded':
+            self.log.info(f"ADF {self.pipeline_name} summary follows.")
+            self.log.info(f"Ran from {run.run_start} to {run.run_end}")
+            self.log.info(f"Duration: {run.duration_in_ms//1000}s")
 
-        return run.status in ('Failed', 'Succeeded')
+            return True
+
+        return False

@@ -8,11 +8,9 @@ from airflow.utils.decorators import apply_defaults
 from bsh_azure.hooks.azure_data_factory_hook import AzureDataFactoryHook
 from bsh_azure.sensors.azure_data_factory_sensor import AzureDataFactorySensor
 
-POLL_SECONDS = 30
+POKE_SECONDS = 30
 
 
-# See https://docs.microsoft.com/en-us/python/api/overview/azure/datafactory
-# https://airflow.readthedocs.io/en/1.10.12/plugins.html
 class DataFactoryOperator(BaseOperator):
     template_fields = []
 
@@ -23,7 +21,7 @@ class DataFactoryOperator(BaseOperator):
                  pipeline_name,
                  adf_conn_id=None,
                  no_wait=False,
-                 poll_seconds=30,
+                 poke_seconds=30,
                  *args,
                  **kwargs):
         """
@@ -36,9 +34,9 @@ class DataFactoryOperator(BaseOperator):
         :param pipeline_name:
         :param adf_conn_id:
         :param no_wait:
-        :param poll_seconds:
-        :param args:
-        :param kwargs:
+        :type no_wait: bool
+        :param poke_seconds:
+        :type poke_seconds: int
         """
         super(DataFactoryOperator, self).__init__(*args, **kwargs)
 
@@ -48,45 +46,44 @@ class DataFactoryOperator(BaseOperator):
         self.adf_conn_id = adf_conn_id
         self.no_wait = no_wait
         self._adf_hook = None
-        self._adf_sensor = None
-        self.poll_seconds = poll_seconds or POLL_SECONDS
+        self.poke_seconds = poke_seconds or POKE_SECONDS
 
     def execute(self, context):
 
         self.log.info("Getting data factory hook.")
-
         self._adf_hook = AzureDataFactoryHook(self.adf_conn_id)
 
-        self.log.info("Creating data factory pipeline run.")
-
+        self.log.info(f"Creating {self.pipeline_name} pipeline run.")
         run_response = self._adf_hook.create_run(
             self.resource_group_name,
             self.factory_name,
             self.pipeline_name
         )
 
-        if not self.no_wait:
+        if self.no_wait:
+            # TODO: Set XCom with run_id
+            # context['ti'].xcom_push('run_id', run_response.run_id)
+            return run_response.run_id
 
-            while True:
+        while True:
 
-                sleep(self.poll_seconds)
+            self.log.info(f"Polling {self.pipeline_name} run status.")
+            sleep(self.poke_seconds)
 
-                run = self._adf_hook.get_pipeline_run(
-                    self.resource_group_name,
-                    self.factory_name,
-                    run_response.run_id
-                )
+            run = self._adf_hook.get_pipeline_run(
+                self.resource_group_name,
+                self.factory_name,
+                run_response.run_id
+            )
 
-                self.log.info(f"status: {run.status}")
-                self.log.info(f"start: {run.run_start}")
-                self.log.info(f"end: {run.run_end}")
-                self.log.info(f"duration: {run.duration_in_ms//1000}")
-                self.log.info(f"message: {run.message}")
+            if run.status in ('Failed', 'Succeeded'):
+                break
 
-                if run.status in ('Failed', 'Succeeded'):
-                    break
+        if run.status != 'Succeeded':
+            raise AirflowException(f"{self.factory_name}: {run.message}.")
 
-                self.log.info("Polling data factory pipeline run status.")
+        self.log.info(f"ADF {self.pipeline_name} summary follows.")
+        self.log.info(f"Ran from {run.run_start} to {run.run_end}")
+        self.log.info(f"Duration: {run.duration_in_ms//1000}s")
 
-            if run.status != 'Succeeded':
-                raise AirflowException(f"{self.factory_name}: {run.message}.")
+        return run_response.run_id

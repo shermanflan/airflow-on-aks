@@ -102,6 +102,4 @@ See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflo
 - Use k8s executor in an AKS deployment.
     - https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html
 - Implement a Teams operator.
-- Consider [plugins](https://airflow.readthedocs.io/en/1.10.12/plugins.html)
-as the approach for extending airflow.
 - Create an airflow2 version

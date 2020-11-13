@@ -1,26 +1,28 @@
 #!/bin/bash
 
-echo "Creating resource group $RESOURCE_GROUP"
-az group create \
-    --name $RESOURCE_GROUP \
-    --location $LOCATION
+STARTTIME=$(date +%s)
 
-echo "Creating registry ${REGISTRY}"
-az acr create \
-    --resource-group $RESOURCE_GROUP \
-    --location "$LOCATION" \
-    --subscription "$SUBSCRIPTION" \
-    --name $REGISTRY \
-    --admin-enabled true --sku Basic \
-    --verbose
+# echo "Creating resource group $RESOURCE_GROUP"
+# az group create \
+#     --name $RESOURCE_GROUP \
+#     --location $LOCATION
 
-echo "Logging into ${REGISTRY}"
-docker login $REGISTRY.azurecr.io \
-    -u $REGISTRY \
-    -p "$(az acr credential show --name $REGISTRY | jq -r '.passwords[0].value')"
+# echo "Creating registry ${REGISTRY}"
+# az acr create \
+#     --resource-group $RESOURCE_GROUP \
+#     --location "$LOCATION" \
+#     --subscription "$SUBSCRIPTION" \
+#     --name $REGISTRY \
+#     --admin-enabled true --sku Basic \
+#     --verbose
 
-echo "Publishing ${IMAGE} to ${REGISTRY}"
-docker push $REGISTRY.azurecr.io/$IMAGE
+# echo "Logging into ${REGISTRY}"
+# docker login $REGISTRY.azurecr.io \
+#     -u $REGISTRY \
+#     -p "$(az acr credential show --name $REGISTRY | jq -r '.passwords[0].value')"
+
+# echo "Publishing ${IMAGE} to ${REGISTRY}"
+# docker push $REGISTRY.azurecr.io/$IMAGE
 # az acr build \
 #     --registry $REGISTRY \
 #     --image $IMAGE .
@@ -49,29 +51,30 @@ echo "Creating k8s cluster $K8S_CLUSTER ($K8S_VERSION)"
 az aks create \
     --subscription "$SUBSCRIPTION" \
     --resource-group $RESOURCE_GROUP \
-    --node-resource-group $RESOURCE_GROUP_NODES \
     --location $LOCATION \
     --name $K8S_CLUSTER \
-    --node-count 4 \
-    --dns-name-prefix condesa \
+    --node-count 3 \
     --kubernetes-version $K8S_VERSION \
     --load-balancer-sku Standard \
     --outbound-type loadBalancer \
     --network-plugin kubenet \
-    --node-osdisk-size 50 \
-    --node-vm-size Standard_B2ms \
+    --node-vm-size Standard_DS2_v2 \
     --vm-set-type VirtualMachineScaleSets \
     --zones 1 2 3 \
     --no-ssh-key \
     --attach-acr $REGISTRY \
-    --enable-addons monitoring \
-    --workspace-resource-id "${WORKSPACE_ID}"
+    --debug
 
+    # --dns-name-prefix condesa \
+    # --node-osdisk-size 50 \
+    # --node-vm-size Standard_B2ms \
+    # --node-resource-group $RESOURCE_GROUP_NODES \
     # --enable-cluster-autoscaler \
     # --min-count 3 \
     # --max-count 5 \
     # --cluster-autoscaler-profile scale-down-unready-time=5m \
     # --enable-addons http_application_routing,monitoring \
+    # --workspace-resource-id "${WORKSPACE_ID}"
     # --generate-ssh-keys \
     # --admin-username azureuser \
     # --disable-rbac \
@@ -158,79 +161,68 @@ kubectl create secret generic \
 #     --key ${OUTPUT}/celery/${KEY_FILE} \
 #     --cert ${OUTPUT}/celery/${CERT_FILE}
 
-# echo "Generating self-signed cert for kuard.${DNS_ZONE}"
-# openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-#     -keyout ${OUTPUT}/kuard/${KEY_FILE} \
-#     -out ${OUTPUT}/kuard/${CERT_FILE} \
-#     -subj "/CN=kuard.${DNS_ZONE}"
-
-# echo "Creating secrets for kuard.${DNS_ZONE}"
-# kubectl create secret tls quickstart-example-tls \
-#     --key ${OUTPUT}/kuard/${KEY_FILE} \
-#     --cert ${OUTPUT}/kuard/${CERT_FILE}
-
 echo "Updating Helm repositories"
 # helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 # helm repo add jetstack https://charts.jetstack.io
 helm repo update
 
 # See https://docs.microsoft.com/en-us/azure/aks/ingress-tls
-echo "Installing k8s' nginx via Helm repository"
-helm install ${NGINX_RELEASE} ingress-nginx/ingress-nginx \
-    --namespace ${INGRESS_NS} \
-    --set controller.replicaCount=1 \
-    --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
-    --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux \
-    --set controller.admissionWebhooks.patch.nodeSelector."beta\.kubernetes\.io/os"=linux
+# echo "Installing k8s' nginx via Helm repository"
+# helm install ${NGINX_RELEASE} ingress-nginx/ingress-nginx \
+#     --namespace ${INGRESS_NS} \
+#     --set controller.replicaCount=1 \
+#     --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
+#     --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux \
+#     --set controller.admissionWebhooks.patch.nodeSelector."beta\.kubernetes\.io/os"=linux
 
 # See https://cert-manager.io/docs/installation/kubernetes/
-echo "Installing cert-manager via Helm repository"
-helm install \
-  cert-manager jetstack/cert-manager \
-  --namespace ${INGRESS_NS} \
-  --version v1.0.4 \
-  --set installCRDs=true \
-  --set nodeSelector."beta\.kubernetes\.io/os"=linux
+# echo "Installing cert-manager via Helm repository"
+# helm install \
+#   cert-manager jetstack/cert-manager \
+#   --namespace ${INGRESS_NS} \
+#   --version v1.0.4 \
+#   --set installCRDs=true \
+#   --set nodeSelector."beta\.kubernetes\.io/os"=linux
 
 # See https://docs.microsoft.com/en-us/azure/dns/dns-getstarted-cli
 # See https://docs.microsoft.com/en-us/azure/dns/dns-zones-records
 # See https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns
-declare EXTERNAL_IP=$(kubectl get svc ${NGINX_RELEASE}-ingress-nginx-controller \
-                        -n ${INGRESS_NS} \
-                        -o jsonpath='{..ip}')  # k8s' nginx
+# declare EXTERNAL_IP=$(kubectl get svc ${NGINX_RELEASE}-ingress-nginx-controller \
+#                         -n ${INGRESS_NS} \
+#                         -o jsonpath='{..ip}')  # k8s' nginx
 
 # echo "Creating DNS zone ${DNS_ZONE}"
 # az network dns zone create \
 #     -g ${RESOURCE_GROUP_NODES} \
 #     -n ${DNS_ZONE}
 
-echo "Updating DNS host record for ${AIRFLOW_HOST}.${DNS_ZONE} on ${EXTERNAL_IP}"
-az network dns record-set a delete \
-    -n ${AIRFLOW_HOST} \
-    -g airflow-sandbox \
-    -z ${DNS_ZONE} \
-    --yes
+# echo "Updating DNS host record for ${AIRFLOW_HOST}.${DNS_ZONE} on ${EXTERNAL_IP}"
+# az network dns record-set a delete \
+#     -n ${AIRFLOW_HOST} \
+#     -g airflow-sandbox \
+#     -z ${DNS_ZONE} \
+#     --yes
 
-az network dns record-set a add-record \
-    -n ${AIRFLOW_HOST} \
-    -g airflow-sandbox \
-    -z ${DNS_ZONE} \
-    --ttl 60 \
-    -a ${EXTERNAL_IP}
+# az network dns record-set a add-record \
+#     -n ${AIRFLOW_HOST} \
+#     -g airflow-sandbox \
+#     -z ${DNS_ZONE} \
+#     --ttl 60 \
+#     -a ${EXTERNAL_IP}
 
-echo "Updating DNS host record for ${CELERY_HOST}.${DNS_ZONE} on ${EXTERNAL_IP}"
-az network dns record-set a delete \
-    -n ${CELERY_HOST} \
-    -g airflow-sandbox \
-    -z ${DNS_ZONE} \
-    --yes
+# echo "Updating DNS host record for ${CELERY_HOST}.${DNS_ZONE} on ${EXTERNAL_IP}"
+# az network dns record-set a delete \
+#     -n ${CELERY_HOST} \
+#     -g airflow-sandbox \
+#     -z ${DNS_ZONE} \
+#     --yes
 
-az network dns record-set a add-record \
-    -n ${CELERY_HOST} \
-    -g airflow-sandbox \
-    -z ${DNS_ZONE} \
-    --ttl 60 \
-    -a ${EXTERNAL_IP}
+# az network dns record-set a add-record \
+#     -n ${CELERY_HOST} \
+#     -g airflow-sandbox \
+#     -z ${DNS_ZONE} \
+#     --ttl 60 \
+#     -a ${EXTERNAL_IP}
 
 # Uninstall cert-manager
 # helm --namespace cert-manager delete cert-manager
@@ -238,3 +230,6 @@ az network dns record-set a add-record \
 
 # Uninstall nginx
 # helm uninstall ${NGINX_RELEASE}
+
+declare ENDTIME=$(date +%s)
+echo "Executed script in $(( (${ENDTIME}-${STARTTIME})/60 )) minutes"
