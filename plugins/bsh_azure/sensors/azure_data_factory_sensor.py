@@ -16,7 +16,7 @@ class AzureDataFactorySensor(BaseSensorOperator):
                  resource_group_name,
                  factory_name,
                  run_id,
-                 adf_conn_id=None,
+                 adf_conn_id='azure_data_factory_default',
                  *args,
                  **kwargs):
         super(AzureDataFactorySensor, self).__init__(*args, **kwargs)
@@ -24,6 +24,7 @@ class AzureDataFactorySensor(BaseSensorOperator):
         self.resource_group_name = resource_group_name
         self.factory_name = factory_name
         self.run_id = run_id
+        self.adf_conn_id = adf_conn_id
         self._adf_hook = None
 
     def poke(self, context):

@@ -54,7 +54,7 @@ with DAG('geonames_e2e',
          description='Example using Azure ADF operator',
          schedule_interval=None,  # "@once",
          start_date=days_ago(1),
-         tags=['azure', 'aci'],
+         tags=['azure', 'aks', 'adf'],
          ) as dag:
 
     dag.doc_md = __doc__
@@ -97,6 +97,7 @@ with DAG('geonames_e2e',
         # is_delete_operator_pod=True,
         in_cluster=False,
         # cluster_context='',
+        get_logs=True,
         config_file='/opt/airflow/dags/config/kube.config',
         # NOTE: this will not work until 1.10.13
         # pod_template_file='/opt/airflow/dags/config/aks-geonames.yaml'

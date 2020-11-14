@@ -1,6 +1,14 @@
 """
-## redis_q2_ex.py
-Example using redis API.
+## box2lake_sensor.py
+Example using Box.com API.
+
+- Demonstrates a Box sensor for file availability before proceeding with ETL.
+
+### References
+Box APIs used
+
+- REST: https://developer.box.com/reference/
+- Python SDK: https://box-python-sdk.readthedocs.io/en/stable/boxsdk.html
 """
 from datetime import datetime, timedelta
 
@@ -11,23 +19,25 @@ from airflow.operators.email_operator import EmailOperator
 from airflow.operators.python_operator import PythonOperator 
 from airflow.utils.dates import days_ago
 
+from bsh_azure.sensors.box_sensor import BoxSensor, BoxItemType
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
     'email': ['shermanflan@gmail.com'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 1,
+    'retries': 0,
     'retry_delay': timedelta(seconds=5),
     'queue': 'airq2',
-    # 'catchup': False
+    'catchup': False,
     # 'pool': 'backfill',
     # 'priority_weight': 10,
     # 'end_date': datetime(2016, 1, 1),
     # 'wait_for_downstream': False,
     # 'dag': dag,
     # 'sla': timedelta(hours=2),
-    # 'execution_timeout': timedelta(seconds=300),
+    # 'execution_timeout': timedelta(minutes=30),
     # 'on_failure_callback': some_function,
     # 'on_success_callback': some_other_function,
     # 'on_retry_callback': another_function,
@@ -36,54 +46,32 @@ default_args = {
 }
 
 
-def set_redis(key, value, **context):
-    redis_hook = RedisHook(redis_conn_id='redis_default')
-
-    r = redis_hook.get_conn()
-    r.set(key, value)
-
-    context['ti'].xcom_push('redis-test', value)
-
-
-def get_redis(key, **context):
-    redis_hook = RedisHook(redis_conn_id='redis_default')
-
-    r = redis_hook.get_conn()
-    return r.get(key)
-
-
-with DAG('redis_q2_ex',
+with DAG('box2lake_sensor',
          default_args=default_args,
-         description='Example using redis api',
-         schedule_interval=timedelta(days=1),  # "0 0 * * *" or "@daily"
-         start_date=days_ago(2),
-         tags=['redis']
+         description='Example using Box.com api',
+         schedule_interval=None,  # "0 0 * * *" or "@daily" or timedelta(hours=2)
+         start_date=days_ago(1),
+         tags=['azure', 'aks', 'box.com']
          ) as dag:
 
     dag.doc_md = __doc__
 
-    write_kv = PythonOperator(
-        task_id='write_kv',
-        python_callable=set_redis,
-        op_kwargs={
-            'key': 'my-airflow:rko',
-            'value': f'test {datetime.now()}'
-        },
-        provide_context=True,
+    wait_for_daily_file = BoxSensor(
+        task_id='wait_for_daily_file_task',
+        box_item_path='Utilization Reports/Daily Schedule Status Reports/2020 Reports/11-November/Branch Scheduled Hours Breakdown_11_15_2020.xlsx',
+        box_item_type=BoxItemType.FILE,
+        poke_interval=5,
+        timeout=300,
+        mode='poke'
     )
 
-    task_for_q = BashOperator(
-        task_id= 'task_for_q2',
-        bash_command='echo $hostname',
-    )
-
-    read_kv = PythonOperator(
-        task_id='read_kv',
-        python_callable=get_redis,
-        op_kwargs={
-            'key': 'my-airflow:rko',
-        },
-        provide_context=True,
+    wait_for_weekly_file = BoxSensor(
+        task_id='wait_for_weekly_file_task',
+        box_item_path='Utilization Reports/Weekly Utilization Reports/2020 Reports/11-November/November - 13/Telephony Usage By Branch 11.13.2020.xlsx',
+        box_item_type=BoxItemType.FILE,
+        poke_interval=5,
+        timeout=300,
+        mode='poke'
     )
 
     body = """
@@ -101,4 +89,4 @@ with DAG('redis_q2_ex',
         pool='utility_pool',
     )
 
-    write_kv >> [task_for_q, read_kv] >> email_task
+    [wait_for_daily_file, wait_for_weekly_file] >> email_task

@@ -5,39 +5,28 @@ services:
 #        image: namshi/smtp
 #        ports:
 #            - 25:25
-    plugin-tester:
-        image: airflow-plugin
-        entrypoint: ['python3', './main.py']
+    airflow-web:
+        image: airflow-web
+        entrypoint: ./scripts/airflow-all-start.sh
         build:
             context: .
             dockerfile: Dockerfile
+        ports:
+            - 8080:8080
+            - 5555:5555
+#        depends_on:
+#            - smtp-local
         env_file: .env
         environment:
-            - LOG_LEVEL=DEBUG
+            - AIRFLOW__CORE__LOGGING_LEVEL=INFO
+            - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
+            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+            - AIRFLOW__WEBSERVER__AUTHENTICATE=False
+            - AIRFLOW__WEBSERVER__RBAC=False
+            - AIRFLOW__WEBSERVER__AUTH_BACKEND=airflow.api.auth.backend.deny_all
+            - AIRFLOW__WEBSERVER__RELOAD_ON_PLUGIN_CHANGE=True
         volumes:
             - ~/personal/github/airflow-local/dags:/opt/airflow/dags
             - ~/personal/github/airflow-local/bootstrap:/opt/airflow/scripts
-            - ~/personal/github/airflow-local/bootstrap/metadata:/opt/airflow/init
-#    airflow-web:
-#        image: airflow-web
-#        entrypoint: ./scripts/airflow-all-start.sh
-#        build:
-#            context: .
-#            dockerfile: Dockerfile
-#        ports:
-#            - 8080:8080
-#            - 5555:5555
-#        depends_on:
-#            - smtp-local
-#        env_file: .env
-#        environment:
-#            - AIRFLOW__CORE__LOGGING_LEVEL=INFO
-#            - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
-#            - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
-#            - AIRFLOW__WEBSERVER__AUTHENTICATE=False
-#            - AIRFLOW__WEBSERVER__RBAC=False
-#            - AIRFLOW__WEBSERVER__AUTH_BACKEND=airflow.api.auth.backend.deny_all
-#        volumes:
-#            - ~/personal/github/airflow-local/dags:/opt/airflow/dags
-#            - ~/personal/github/airflow-local/bootstrap:/opt/airflow/scripts
+            - ~/personal/github/airflow-local/plugins:/opt/airflow/plugins
 #            - ~/personal/github/airflow-local/bootstrap/metadata:/opt/airflow/init
