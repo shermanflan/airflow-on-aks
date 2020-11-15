@@ -5,6 +5,7 @@ Example using Azure operators for ADF and AKS.
 - Code inspired by [contrib repo](https://github.com/apache/airflow/tree/1.10.12/airflow/contrib).
 """
 from datetime import date, datetime, timedelta
+import os
 
 from airflow import DAG
 from airflow.contrib.operators.kubernetes_pod_operator import (
@@ -61,7 +62,7 @@ with DAG('geonames_e2e',
 
     t1 = BashOperator(
         task_id='print_date',
-        bash_command="echo {{var.json.aci_config}}"
+        bash_command="echo {{ ts }}"
     )
 
     geonames_pod_task = KubernetesPodOperator(
@@ -91,14 +92,16 @@ with DAG('geonames_e2e',
                    secret='az-file-secret', key='azurestorageaccountkey')
         ],
         resources={
-            'request_memory': '500Mi', 'request_cpu': '500m',
-            'limit_memory': '2Gi', 'limit_cpu': '2000m'
+            'request_memory': '250Mi', 'request_cpu': '200m',
+            'limit_memory': '1Gi', 'limit_cpu': '1000m'
         },
         # is_delete_operator_pod=True,
-        in_cluster=False,
+        in_cluster=True,
+        config_file='/opt/airflow/k8s-sec/kube-config',
+        # hostnetwork=False,
         # cluster_context='',
         get_logs=True,
-        config_file='/opt/airflow/dags/config/kube.config',
+        log_events_on_failure=True
         # NOTE: this will not work until 1.10.13
         # pod_template_file='/opt/airflow/dags/config/aks-geonames.yaml'
     )

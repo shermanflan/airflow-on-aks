@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: box2adls
+  namespace: airflow-tls
+  labels:
+    name: box2adls
+    instance: box2adls-pod
+    version: "1.0.0"
+    component: batch
+    part-of: pods
+spec:
+  restartPolicy: Never  # Always
+  volumes:
+    - name: box-key-file
+      secret:
+        secretName: box-secret
+  containers:
+    - name: box2adls
+      image: rkoH1pVL.azurecr.io/box2adls:latest
+      imagePullPolicy: Always  # IfNotPresent
+      volumeMounts:
+        - name: box-key-file
+          mountPath: "/opt/airflow/box-sec"
+          readOnly: true
+      env:
+        - name: SIMMER
+          value: "False"
+        - name: BROKER_URL
+          value: "redis://airflow-redis-service:6379/0"
+        - name: BOX_CONFIG
+          value: "/opt/airflow/box-sec/box-auth-location"
+        - name: BOX_FOLDER_PATH
+          value: "Utilization Reports/Daily Schedule Status Reports/2020 Reports/11-November"
+        - name: BOX_FOLDER_PATH2
+          value: "Utilization Reports/Weekly Utilization Reports/2020 Reports/11-November/November - 13"
+        - name: BOX_FILE_MASK
+          value: "Branch Scheduled Hours Breakdown_11_14_2020.xlsx"
+        - name: BOX_FILE_MASK2
+          value: "Telephony Usage By Branch 11.13.2020.xlsx"
+        - name: BOX_FILE_RENAME
+          value: "Branch Scheduled Hours Breakdown_k8s.xlsx"
+        - name: WS_PREV_NAME
+          value: "PriorMonth"
+        - name: WS_CURR_NAME
+          value: "CurrentMonth"
+        - name: WS_NEXT_NAME
+          value: "NextMonth"
+        - name: BOX_FILE_RENAME2
+          value: "Telephony Usage By Branch_k8s.xlsx"
+        - name: WS_HIDDEN_NAME
+          value: "{0} Tele Stats"
+        - name: WS_HIDDEN_RENAME
+          value: "Tele Stats"
+        - name: LAKE_ACCOUNT_NAME
+          value: "airflowstoragesandbox"
+        - name: LAKE_ACCOUNT_KEY
+          valueFrom:
+            secretKeyRef:
+              name: az-file-secret
+              key: azurestorageaccountkey
+        - name: LAKE_CONTAINER_NAME
+          value: "enterprisedata"
+        - name: LAKE_FOLDER_PATH
+          value: "Raw/BOX Reports"
+      resources:
+        requests:
+          cpu: "200m"
+          memory: "150Mi"
+        limits:
+          cpu: "2000m"
+          memory: "2Gi"

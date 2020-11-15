@@ -4,7 +4,7 @@ metadata:
   name: airflow-workers-deploy
   namespace: airflow-tls
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       name: airflow-workers
@@ -29,20 +29,29 @@ spec:
       nodeSelector:
         "beta.kubernetes.io/os": linux
       volumes:
-        - name: "az-dags"
+        - name: az-dags
           persistentVolumeClaim:
             claimName: azure-claim-dags
-        - name: "az-scripts"
+        - name: az-scripts
           persistentVolumeClaim:
             claimName: azure-claim-scripts
+        - name: kube-config
+          secret:
+            secretName: kube-config-secret
+        - name: azure-spn
+          secret:
+            secretName: azure-spn-secret
+        - name: box-key-file
+          secret:
+            secretName: box-secret
       initContainers:
         - name: airflow-wait-web
           image: busybox:1.32.0
           command: ['sh', '-c', "until nslookup airflow-web-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-web-service; sleep 5; done"]
           resources:
             requests:
-              cpu: "250m"
-              memory: "250Mi"
+              cpu: "100m"
+              memory: "100Mi"
             limits:
               cpu: "500m"
               memory: "500Mi"
@@ -57,13 +66,22 @@ spec:
               - -q 
               - airq1,airq2
           volumeMounts:
-            - name: "az-dags"
+            - name: az-dags
               mountPath: "/opt/airflow/dags"
-            - name: "az-scripts"
+            - name: az-scripts
               mountPath: "/opt/airflow/scripts"
+            - name: kube-config
+              mountPath: "/opt/airflow/k8s-sec"
+              readOnly: true
+            - name: azure-spn
+              mountPath: "/opt/airflow/az-sec"
+              readOnly: true
+            - name: box-key-file
+              mountPath: "/opt/airflow/box-sec"
+              readOnly: true
           env:
             - name: AIRFLOW__CORE__LOGGING_LEVEL
-              value: "INFO"
+              value: "DEBUG"
             - name: AIRFLOW__CORE__EXECUTOR
               value: "CeleryExecutor"
             - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
@@ -84,13 +102,23 @@ spec:
               value: "airflow-smtp-svc"
             - name: AIRFLOW__SMTP__SMTP_STARTTLS
               value: "False"
+            - name: KUBE_CONFIG_LOCATION
+              value: "/opt/airflow/k8s-sec/kube-config"
+            - name: AZURE_AUTH_LOCATION
+              value: "/opt/airflow/az-sec/azure-auth"
+            - name: BOX_AUTH_LOCATION
+              value: "/opt/airflow/box-sec/box-auth"
           resources:
             requests:
-              cpu: "250m"
-              memory: "256Mi"
+              cpu: "1300m"
+              memory: "2048Mi"
             limits:
-              cpu: "2000m"
-              memory: "2Gi"
+              cpu: "4000m"
+              memory: "4Gi"
+          ports:
+            - name: http
+              containerPort: 8793
+              protocol: TCP
           # TODO: Consider readiness or startup probe into database
           # readinessProbe:
           #   httpGet:
@@ -109,6 +137,30 @@ spec:
           #   initialDelaySeconds: 5
           #   periodSeconds: 5
 ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: airflow-worker-service
+#   namespace: airflow-tls
+#   labels:
+#     name: airflow-worker-service
+#     instance: airflow-worker-celery
+#     version: "1.0.0"
+#     component: worker
+#     part-of: airflow
+# spec:
+#   type: ClusterIP
+#   selector:
+#     name: airflow-workers
+#     instance: airflow-workers-celery
+#     version: "1.0.0"
+#     component: worker
+#     part-of: airflow
+#   ports:
+#     - name: http
+#       protocol: TCP
+#       port: 8793
+# ---
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:

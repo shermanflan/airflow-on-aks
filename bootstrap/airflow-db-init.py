@@ -141,9 +141,7 @@ if __name__ == "__main__":
     #     logger.info('Adding default user...')
     #     add_default_user()
 
-    logger.info('Updating variables...')
-
-    aci_path = os.path.join(os.environ['AIRFLOW_HOME'],
-                            'scripts', 'metadata', 'geonames2lake.json')
-
-    add_aci_config('aci_config', aci_path)
+    # logger.info('Updating variables...')
+    # aci_path = os.path.join(os.environ['AIRFLOW_HOME'],
+    #                         'scripts', 'metadata', 'geonames2lake.json')
+    # add_aci_config('aci_config', aci_path)
