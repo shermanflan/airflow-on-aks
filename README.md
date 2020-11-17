@@ -21,8 +21,8 @@ See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflo
 ## Airflow on Azure Kubernetes Service
 Key objectives include:
 
-- Deploy Airflow configured to use the Celery executor
-- Deploy Airflow configured to use the Kubernetes executor
+- Deploy Airflow configured to use the Celery Executor
+- Deploy Airflow configured to use the Kubernetes Executor
 - Use the nginx [ingress](https://docs.microsoft.com/en-us/azure/aks/ingress-tls) 
 provided by the managed helm chart
 - Enable tls-termination using the [cert-mgr](https://cert-manager.io/docs/installation/kubernetes/) 
