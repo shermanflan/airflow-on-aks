@@ -97,7 +97,7 @@ the following should be kept in mind.
 - For development, use http://127.0.0.1 instead of localhost
 - Upon successful authentication, the Azure `user.id` field is mapped to 
 the `username` field in `ab_user`
-- Using personal hotmail accounts can cause issues reading JWT (see 
+- Using personal hotmail accounts can cause issues reading the JWT (see 
 [oauthlib](https://github.com/oauthlib/oauthlib/blob/v2.1.0/oauthlib/oauth2/rfc6749/clients/web_application.py#L17))
 
 ## Azure Authentication for Operators
