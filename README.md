@@ -21,12 +21,12 @@ See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflo
 ## Airflow on Azure Kubernetes Service
 Key objectives include:
 
-- Deploy Airflow configured to use a Celery executor
+- Deploy Airflow configured to use the Celery executor
 - Deploy Airflow configured to use the Kubernetes executor
 - Use the nginx [ingress](https://docs.microsoft.com/en-us/azure/aks/ingress-tls) 
 provided by the managed helm chart
 - Enable tls-termination using the [cert-mgr](https://cert-manager.io/docs/installation/kubernetes/) 
-controller via helm chart
+controller provided by the managed helm chart
 - Use a DNS zone with a registered domain (rikguz.com)
 - Secure Airflow using OAuth2 via Azure Active Directory
 - Include a plugin with operators, hooks, etc. to support orchestration
@@ -44,17 +44,17 @@ along with a registered domain
 
 ### Airflow on AKS using Celery
 The manifests under [k8s/airflow](k8s/airflow) define an Airflow configuration 
-using the CeleryExecutor. In addition, various volume claims are defined 
+using the Celery Executor. In addition, various volume claims are defined 
 in [k8s/base](k8s/base). The volumes are configured against an Azure File
 Share to store dags and initialization scripts. Finally, an nginx 
 ingress is defined under [k8s/ingress-nginx](k8s/ingress-nginx/aks-airflow-ingress-tls.yaml),
-which configures the tls termination and certificate generation using the
-[Let's Encrypt issuer](https://cert-manager.io/docs/tutorials/acme/ingress/).
+which configures the tls termination and certificate generation using
+[Let's Encrypt](https://cert-manager.io/docs/tutorials/acme/ingress/).
 
 The Airflow image used by the manifests is a customized version configured
-with RBAC and OAuth2 using the 1.10.2 version. It is baked with a modified
-[webserver_config.py](bootstrap/webserver_config.py) file. For full details,
-refer to the [Dockerfile](./Dockerfile).
+with RBAC and OAuth2 using version 1.10.2 as a baseline. It is baked with 
+a modified [webserver_config.py](bootstrap/webserver_config.py) file. 
+For full details, refer to the [Dockerfile](./Dockerfile).
 
 ### Deployment
 Assuming all of the pre-requisites are satisfied, the Airflow deployment can
@@ -68,13 +68,13 @@ referenced by the volumes defined in [k8s/base](k8s/base)
 defined in [k8s/base](k8s/base)
 3. Run the [`az-add-aks.sh`](k8s/az-add-aks.sh) script to build an AKS 
 cluster along with a container registry, helm chart installations, and 
-DNS zone updates.
+DNS zone updates
 4. Then, run the [`aks-install-airflow-celery.sh`](k8s/aks-install-airflow-celery.sh) 
 script to deploy Airflow, the nginx ingress, and the cert-mgr certificate 
-controller.
+controller
 5. Your deployment should be up and running
 6. To delete the cluster, run the [`aks-drop.sh`](k8s/az-drop-aks.sh)
-script 
+script
    
 ## Azure Authentication for Web UI
 The airflow configuration uses the OAuth2 authorization code flow facilitated 
@@ -101,11 +101,28 @@ the `username` field in `ab_user`
 [oauthlib](https://github.com/oauthlib/oauthlib/blob/v2.1.0/oauthlib/oauth2/rfc6749/clients/web_application.py#L17))
 
 ## Azure Authentication for Operators
-A json key file has been created for authentication. This enables `contrib`
-Azure operators to connect to the tenant. To generate:
+A json key file has been created for authentication. This enables 
+`contrib` Azure operators to connect to the tenant. To generate:
 
 1. Use az cli to login
 2. Run: `az ad sp create-for-rbac --sdk-auth > airflow.azureauth`
+
+## Box.com Authentication for Box.com Hook
+A json key file has been created for authentication and loaded as secret
+[box_secret](https://github.com/shermanflan/airflow-on-aks/blob/master/k8s/az-add-aks.sh#L153)
+in AKS. This enables the custom [`BoxHook`](plugins/bsh_azure/hooks/box_hook.py) 
+to authenticae to the Box.com tenant. To re-generate the key file, follow 
+these steps:
+
+1. Log into the box.com [developer console](https://rescare.app.box.com/developers/console)
+using a personal login
+2. Create an OAuth2 application
+3. Go to Configuration
+4. Under `Add and Manage Public Keys`, remove the current key and click
+`Genereate a Public/Private Keypair`.
+5. This will download a new json config file
+6. This file should be saved locally and used as the basis for an AKS 
+secret
 
 ## Deploy to Azure Container Instances
 It is possible to deploy a set of Airflow containers to a single ACI group. 
