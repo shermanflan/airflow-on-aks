@@ -11,12 +11,13 @@ In addition, the following additional features are included.
 
 ### To Do
 
-- Use git repo sync for dags. 
+- Use git repo sync for dags
 See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
-- Use k8s executor in an AKS deployment.
+- Use k8s executor in an AKS deployment
     - https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html
-- Implement an MS Teams operator.
-- Create an airflow2 version
+- Implement an MS Teams operator
+- Create an airflow2 version upon release
+- Deploy using the "official" Airflow helm chart
 
 ## Airflow on Azure Kubernetes Service
 Key objectives include:
