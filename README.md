@@ -51,7 +51,7 @@ Share to store dags and initialization scripts. Finally, an nginx
 ingress is defined under [k8s/ingress-nginx](k8s/ingress-nginx/aks-airflow-ingress-tls.yaml),
 configured with tls termination. Automated certificate generation is 
 configured against the [Let's Encrypt](https://cert-manager.io/docs/tutorials/acme/ingress/)
-issuer using the manifests under ['k8s/cert-manager'](k8s/cert-manager).
+issuer using the manifests under [k8s/cert-manager](k8s/cert-manager).
 Finally, the Airflow image used by the manifests is a customized version 
 configured with RBAC and OAuth2 using version 1.10.2 as a baseline. It is 
 baked with a modified [webserver_config.py](bootstrap/webserver_config.py) 
