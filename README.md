@@ -11,10 +11,10 @@ In addition, the following additional features are included.
 
 ### To Do
 
-- Use git repo sync for dags
-See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
-- Use k8s executor in an AKS deployment
-    - https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html
+- Use [git repo sync](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
+for dags
+- Use the [Kubernetes Executor](https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html) 
+in an AKS deployment
 - Implement an MS Teams operator
 - Create an airflow2 version upon release
 - Deploy using the "official" Airflow helm chart
@@ -25,8 +25,8 @@ Key objectives include:
 - Deploy Airflow configured to use the Celery Executor
 - Deploy Airflow configured to use the Kubernetes Executor
 - Use the nginx [ingress](https://docs.microsoft.com/en-us/azure/aks/ingress-tls) 
-provided by the managed helm chart
-- Enable tls-termination using the [cert-mgr](https://cert-manager.io/docs/installation/kubernetes/) 
+with tls termination provided by the managed helm chart
+- Enable certificate management using the [cert-mgr](https://cert-manager.io/docs/installation/kubernetes/) 
 controller provided by the managed helm chart
 - Use a DNS zone with a registered domain (rikguz.com)
 - Secure Airflow using OAuth2 via Azure Active Directory
@@ -49,13 +49,13 @@ using the Celery Executor. In addition, various volume claims are defined
 in [k8s/base](k8s/base). The volumes are configured against an Azure File
 Share to store dags and initialization scripts. Finally, an nginx 
 ingress is defined under [k8s/ingress-nginx](k8s/ingress-nginx/aks-airflow-ingress-tls.yaml),
-which configures the tls termination and certificate generation using
-[Let's Encrypt](https://cert-manager.io/docs/tutorials/acme/ingress/).
-
-The Airflow image used by the manifests is a customized version configured
-with RBAC and OAuth2 using version 1.10.2 as a baseline. It is baked with 
-a modified [webserver_config.py](bootstrap/webserver_config.py) file. 
-For full details, refer to the [Dockerfile](./Dockerfile).
+configured with tls termination. Automated certificate generation is 
+configured against the [Let's Encrypt](https://cert-manager.io/docs/tutorials/acme/ingress/)
+issuer using the manifests under ['k8s/cert-manager'](k8s/cert-manager).
+Finally, the Airflow image used by the manifests is a customized version 
+configured with RBAC and OAuth2 using version 1.10.2 as a baseline. It is 
+baked with a modified [webserver_config.py](bootstrap/webserver_config.py) 
+file. For full details, refer to the [Dockerfile](./Dockerfile).
 
 ### Deployment
 Assuming all of the pre-requisites are satisfied, the Airflow deployment can
