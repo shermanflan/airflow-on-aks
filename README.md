@@ -1,6 +1,6 @@
 # airflow-on-aks
 The primary goal of this repo is to provide the necessary scripts and 
-manifests required to automate a deployment of Airflow to AKS. Key to
+manifests required to automate a deployment of Airflow on AKS. Key to
 this enterprise deployment is supporting TLS termination via nginx ingress 
 and OAuth2 via Azure Active Directory.
 
