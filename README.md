@@ -107,7 +107,7 @@ A json key file has been created for authentication. This enables
 1. Use az cli to login
 2. Run: `az ad sp create-for-rbac --sdk-auth > airflow.azureauth`
 
-## Box.com Authentication for Box.com Hook
+## Box.com Authentication for BoxHook
 A json key file has been created for authentication and loaded as secret
 [box_secret](https://github.com/shermanflan/airflow-on-aks/blob/master/k8s/az-add-aks.sh#L153)
 in AKS. This enables the custom [`BoxHook`](plugins/bsh_azure/hooks/box_hook.py) 
