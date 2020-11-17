@@ -37,9 +37,6 @@ spec:
         - name: az-scripts
           persistentVolumeClaim:
             claimName: azure-claim-scripts
-        - name: kube-config
-          secret:
-            secretName: kube-config-secret
         - name: azure-spn
           secret:
             secretName: azure-spn-secret
@@ -68,9 +65,6 @@ spec:
               mountPath: "/opt/airflow/dags"
             - name: az-scripts
               mountPath: "/opt/airflow/scripts"
-            - name: kube-config
-              mountPath: "/opt/airflow/k8s-sec"
-              readOnly: true
             - name: azure-spn
               mountPath: "/opt/airflow/az-sec"
               readOnly: true
@@ -100,16 +94,16 @@ spec:
               value: "airflow-smtp-svc"
             - name: AIRFLOW__SMTP__SMTP_STARTTLS
               value: "False"
-            - name: KUBE_CONFIG_LOCATION
-              value: "/opt/airflow/k8s-sec/kube-config"
+            - name: AIRFLOW__SMTP__SMTP_MAIL_FROM
+              value: "airflow@smtp.rikguz.com"
             - name: AZURE_AUTH_LOCATION
               value: "/opt/airflow/az-sec/azure-auth"
             - name: BOX_AUTH_LOCATION
               value: "/opt/airflow/box-sec/box-auth"
           resources:
             requests:
-              cpu: "1000m"
-              memory: "2048Mi"
+              cpu: "500m"
+              memory: "512Mi"
             limits:
               cpu: "4000m"
               memory: "4Gi"

@@ -60,7 +60,7 @@ with DAG('geonames_e2e',
 
     dag.doc_md = __doc__
 
-    t1 = BashOperator(
+    print_date = BashOperator(
         task_id='print_date',
         bash_command="echo {{ ts }}"
     )
@@ -95,13 +95,12 @@ with DAG('geonames_e2e',
             'request_memory': '250Mi', 'request_cpu': '200m',
             'limit_memory': '1Gi', 'limit_cpu': '1000m'
         },
-        # is_delete_operator_pod=True,
         in_cluster=True,
-        config_file='/opt/airflow/k8s-sec/kube-config',
-        # hostnetwork=False,
         # cluster_context='',
+        is_delete_operator_pod=False,
         get_logs=True,
         log_events_on_failure=True
+        # config_file='/opt/airflow/k8s-sec/kube-config',
         # NOTE: this will not work until 1.10.13
         # pod_template_file='/opt/airflow/dags/config/aks-geonames.yaml'
     )
@@ -115,4 +114,19 @@ with DAG('geonames_e2e',
         # no_wait=True
     )
 
-    t1 >> geonames_pod_task >> geonames_adf_task
+    body = """
+        Log: <a href="{{ ti.log_url }}">Link</a><br>
+        Host: {{ ti.hostname }}<br>
+        Log file: {{ ti.log_filepath }}<br>
+        Mark success: <a href="{{ ti.mark_success_url }}">Link</a><br>
+    """
+
+    email_task = EmailOperator(
+        task_id= 'email_task',
+        to='shermanflan@gmail.com',
+        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='print_date') }}",
+        html_content=body,
+        pool='utility_pool',
+    )
+
+    print_date >> geonames_pod_task >> geonames_adf_task >> email_task

@@ -29,7 +29,7 @@ spec:
         - name: BROKER_URL
           value: "redis://airflow-redis-service:6379/0"
         - name: BOX_CONFIG
-          value: "/opt/airflow/box-sec/box-auth-location"
+          value: "/opt/airflow/box-sec/box-auth"
         - name: BOX_FOLDER_PATH
           value: "Utilization Reports/Daily Schedule Status Reports/2020 Reports/11-November"
         - name: BOX_FOLDER_PATH2

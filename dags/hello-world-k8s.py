@@ -19,7 +19,7 @@ default_args = {
     'pool': 'default_pool',
 }
 
-with DAG('kubernetes_sample',
+with DAG('hello-world-k8s',
          default_args=default_args,
          start_date=days_ago(2),
          schedule_interval="@daily") as dag:

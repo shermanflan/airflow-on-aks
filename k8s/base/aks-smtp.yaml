@@ -39,10 +39,12 @@ metadata:
   name: airflow-smtp-svc
   namespace: airflow-tls
 spec:
-  type: ClusterIP
+  type: LoadBalancer # ClusterIP
   ports:
     - name: http
       port: 25
       targetPort: 25
   selector:
     app: airflow-smtp
+  loadBalancerSourceRanges:
+    - "136.49.2.8/32"

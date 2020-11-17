@@ -35,9 +35,6 @@ spec:
         - name: az-scripts
           persistentVolumeClaim:
             claimName: azure-claim-scripts
-        - name: kube-config
-          secret:
-            secretName: kube-config-secret
         - name: azure-spn
           secret:
             secretName: azure-spn-secret
@@ -70,9 +67,6 @@ spec:
               mountPath: "/opt/airflow/dags"
             - name: az-scripts
               mountPath: "/opt/airflow/scripts"
-            - name: kube-config
-              mountPath: "/opt/airflow/k8s-sec"
-              readOnly: true
             - name: azure-spn
               mountPath: "/opt/airflow/az-sec"
               readOnly: true
@@ -102,16 +96,16 @@ spec:
               value: "airflow-smtp-svc"
             - name: AIRFLOW__SMTP__SMTP_STARTTLS
               value: "False"
-            - name: KUBE_CONFIG_LOCATION
-              value: "/opt/airflow/k8s-sec/kube-config"
+            - name: AIRFLOW__SMTP__SMTP_MAIL_FROM
+              value: "airflow@smtp.rikguz.com"
             - name: AZURE_AUTH_LOCATION
               value: "/opt/airflow/az-sec/azure-auth"
             - name: BOX_AUTH_LOCATION
               value: "/opt/airflow/box-sec/box-auth"
           resources:
             requests:
-              cpu: "1300m"
-              memory: "2048Mi"
+              cpu: "200m"
+              memory: "256Mi"
             limits:
               cpu: "4000m"
               memory: "4Gi"
@@ -136,7 +130,7 @@ spec:
           #       - --anonymize
           #   initialDelaySeconds: 5
           #   periodSeconds: 5
----
+# ---
 # apiVersion: v1
 # kind: Service
 # metadata:
@@ -161,16 +155,16 @@ spec:
 #       protocol: TCP
 #       port: 8793
 # ---
-apiVersion: autoscaling/v1
-kind: HorizontalPodAutoscaler
-metadata:
-  name: airflow-workers-hpa
-  namespace: airflow-tls
-spec:
-  maxReplicas: 3 # define max replica count
-  minReplicas: 1 # define min replica count
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: airflow-workers-deploy
-  targetCPUUtilizationPercentage: 45 # target CPU utilization
+# apiVersion: autoscaling/v1
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: airflow-workers-hpa
+#   namespace: airflow-tls
+# spec:
+#   maxReplicas: 3 # define max replica count
+#   minReplicas: 1 # define min replica count
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: airflow-workers-deploy
+#   targetCPUUtilizationPercentage: 45 # target CPU utilization

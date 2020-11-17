@@ -59,8 +59,8 @@ with DAG('box2lake_sensor',
 
     dag.doc_md = __doc__
 
-    wait_for_daily_file = BoxSensor(
-        task_id='wait_for_daily_file_task',
+    wait_for_box_daily = BoxSensor(
+        task_id='wait_for_daily_box_task',
         box_item_path='Utilization Reports/Daily Schedule Status Reports/2020 Reports/11-November/Branch Scheduled Hours Breakdown_11_15_2020.xlsx',
         box_item_type=BoxItemType.FILE,
         poke_interval=5,
@@ -68,8 +68,8 @@ with DAG('box2lake_sensor',
         mode='poke'
     )
 
-    wait_for_weekly_file = BoxSensor(
-        task_id='wait_for_weekly_file_task',
+    wait_for_box_weekly = BoxSensor(
+        task_id='wait_for_weekly_box_task',
         box_item_path='Utilization Reports/Weekly Utilization Reports/2020 Reports/11-November/November - 13/Telephony Usage By Branch 11.13.2020.xlsx',
         box_item_type=BoxItemType.FILE,
         poke_interval=5,
@@ -87,17 +87,18 @@ with DAG('box2lake_sensor',
                 'version': '1.0.0', 'component': 'batch-service',
                 'part-of': 'pods'},
         env_vars={
-            "SIMMER": "True",
-            "BROKER_URL": "redis://redis-kv:6379/0",
-            "BOX_FOLDER_PATH": "Utilization Reports/Daily Schedule Status Reports/2020 Reports",
-            "BOX_FOLDER_PATH2": "Utilization Reports/Weekly Utilization Reports/{0} Reports",
-            "BOX_FILE_MASK": "Branch Scheduled Hours Breakdown_{0}.xlsx",
-            "BOX_FILE_MASK2": "Telephony Usage By Branch {0}.xlsx",
-            "BOX_FILE_RENAME": "Branch Scheduled Hours Breakdown.xlsx",
+            "SIMMER": "False",
+            "BROKER_URL": "redis://airflow-redis-service:6379/0",
+            "BOX_CONFIG": "/opt/airflow/box-sec/box-auth",
+            "BOX_FOLDER_PATH": "Utilization Reports/Daily Schedule Status Reports/2020 Reports/11-November",
+            "BOX_FOLDER_PATH2": "Utilization Reports/Weekly Utilization Reports/2020 Reports/11-November/November - 13",
+            "BOX_FILE_MASK": "Branch Scheduled Hours Breakdown_11_14_2020.xlsx",
+            "BOX_FILE_MASK2": "Telephony Usage By Branch 11.13.2020.xlsx",
+            "BOX_FILE_RENAME": "Branch Scheduled Hours Breakdown_af-on-k8s.xlsx",
             "WS_PREV_NAME": "PriorMonth",
             "WS_CURR_NAME": "CurrentMonth",
             "WS_NEXT_NAME": "NextMonth",
-            "BOX_FILE_RENAME2": "Telephony Usage By Branch.xlsx",
+            "BOX_FILE_RENAME2": "Telephony Usage By Branch_af-on-k8s.xlsx",
             "WS_HIDDEN_NAME": "{0} Tele Stats",
             "WS_HIDDEN_RENAME": "Tele Stats",
             "LAKE_ACCOUNT_NAME": "airflowstoragesandbox",
@@ -108,35 +109,37 @@ with DAG('box2lake_sensor',
         secrets=[
             Secret(deploy_type='env', deploy_target='LAKE_ACCOUNT_KEY',
                    secret='az-file-secret', key='azurestorageaccountkey'),
-            Secret(deploy_type='env', deploy_target='BOX_CONFIG',
-                   secret='az-file-secret', key='azurestorageaccountkey')
+            Secret(deploy_type='volume', deploy_target='/opt/airflow/box-sec',
+                   secret='box-secret', key=None)
         ],
         resources={
-            'request_memory': '500Mi', 'request_cpu': '500m',
+            'request_memory': '200Mi', 'request_cpu': '200m',
             'limit_memory': '2Gi', 'limit_cpu': '2000m'
         },
-        # is_delete_operator_pod=True,
-        in_cluster=False,
+        in_cluster=True,
         # cluster_context='',
+        is_delete_operator_pod=False,
         get_logs=True,
-        config_file='/opt/airflow/dags/config/kube.config',
+        log_events_on_failure=True
+        # config_file='/opt/airflow/dags/config/kube.config',
         # NOTE: this will not work until 1.10.13
         # pod_template_file='/opt/airflow/dags/config/aks-geonames.yaml'
     )
 
     body = """
-        Log: <a href="{{ti.log_url}}">Link</a><br>
-        Host: {{ti.hostname}}<br>
-        Log file: {{ti.log_filepath}}<br>
-        Mark success: <a href="{{ti.mark_success_url}}">Link</a><br>
+        Log: <a href="{{ ti.log_url }}">Link</a><br>
+        Host: {{ ti.hostname }}<br>
+        Log file: {{ ti.log_filepath }}<br>
+        Mark success: <a href="{{ ti.mark_success_url }}">Link</a><br>
     """
 
     email_task = EmailOperator(
         task_id= 'email_task',
         to='shermanflan@gmail.com',
-        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='wait_for_daily_file_task') }}",
+        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='wait_for_box_daily') }}",
         html_content=body,
         pool='utility_pool',
     )
 
-    [wait_for_daily_file, wait_for_weekly_file] >> email_task
+    [wait_for_box_daily, wait_for_box_weekly] >> box2adls_pod_task
+    box2adls_pod_task >> email_task

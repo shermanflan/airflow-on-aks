@@ -53,9 +53,6 @@ spec:
         - name: az-init
           persistentVolumeClaim:
             claimName: azure-claim-init
-        - name: kube-config
-          secret:
-            secretName: kube-config-secret
         - name: azure-spn
           secret:
             secretName: azure-spn-secret
@@ -104,15 +101,15 @@ spec:
               value: "True"
           resources:
             requests:
-              cpu: "200m"
-              memory: "200Mi"
+              cpu: "100m"
+              memory: "100Mi"
             limits:
               cpu: "1000m"
               memory: "1Gi"
       containers:
         - name: airflow
-          image: rkoH1pVL.azurecr.io/airflow:1.10.12
-          # image: rkoH1pVL.azurecr.io/airflow:1.10.12-slate
+          # image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12-united
           imagePullPolicy: Always  # IfNotPresent
           command:
               - "./scripts/airflow-web-start.sh"
@@ -123,9 +120,6 @@ spec:
               mountPath: "/opt/airflow/scripts"
             - name: az-init
               mountPath: "/opt/airflow/init"
-            - name: kube-config
-              mountPath: "/opt/airflow/k8s-sec"
-              readOnly: true
             - name: azure-spn
               mountPath: "/opt/airflow/az-sec"
               readOnly: true
@@ -135,6 +129,8 @@ spec:
             # - name: "config"
             #   mountPath: "/data/my-config"
           env:
+            - name: AIRFLOW__WEBSERVER__DAG_DEFAULT_VIEW
+              value: "graph"
             - name: AIRFLOW__CORE__LOGGING_LEVEL
               value: "INFO"
             - name: AIRFLOW__CORE__EXECUTOR
@@ -157,10 +153,12 @@ spec:
               value: "airflow-smtp-svc"
             - name: AIRFLOW__SMTP__SMTP_STARTTLS
               value: "False"
+            - name: AIRFLOW__SMTP__SMTP_MAIL_FROM
+              value: "airflow@smtp.rikguz.com"
             - name: AIRFLOW__WEBSERVER__RBAC
-              value: "False"
+              value: "True"
             - name: AIRFLOW__WEBSERVER__AUTHENTICATE
-              value: "False"
+              value: "True"
             - name: AZURE_TENANT_ID
               valueFrom:
                 secretKeyRef:
@@ -176,8 +174,6 @@ spec:
                 secretKeyRef:
                   name: az-oauth-secret
                   key: azure-app-key
-            - name: KUBE_CONFIG_LOCATION
-              value: "/opt/airflow/k8s-sec/kube-config"
             - name: AZURE_AUTH_LOCATION
               value: "/opt/airflow/az-sec/azure-auth"
             - name: BOX_AUTH_LOCATION
@@ -231,7 +227,7 @@ metadata:
     component: web
     part-of: airflow
 spec:
-  type: LoadBalancer # ClusterIP
+  type: ClusterIP # LoadBalancer
   # loadBalancerIP: 52.224.76.127
   selector:
     # Load balance traffic across Pods matching
@@ -251,8 +247,8 @@ spec:
       port: 5555
       # targetPort: 5555
   # externalTrafficPolicy: Local  # Maintain client IP
-  loadBalancerSourceRanges:
-    - "136.49.2.8/32"
+  # loadBalancerSourceRanges:
+  #   - "136.49.2.8/32"
 # ---
 # apiVersion: autoscaling/v1
 # kind: HorizontalPodAutoscaler
