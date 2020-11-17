@@ -80,10 +80,9 @@ script
 ## Azure Authentication for Web UI
 The airflow configuration uses the OAuth2 authorization code flow facilitated 
 by Flask-AppBuilder. A custom [web config](bootstrap/webserver_config.py) has 
-been setup to use the OAuth2 AUTH_TYPE.
-
-In order for the OAuth2 flow to work, an application registration is required 
-with the following properties (all other properties can be left as per defaults).
+been setup to use the OAuth2 AUTH_TYPE. In order for the OAuth2 flow to work, 
+an application registration is required with the following properties (all 
+other properties can be left as per defaults).
 
 - API permissions:
     - Graph API: 
