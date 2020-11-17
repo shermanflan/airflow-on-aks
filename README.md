@@ -47,7 +47,7 @@ along with a registered domain
 The manifests under [k8s/airflow](k8s/airflow) define an Airflow configuration 
 using the Celery Executor. In addition, various volume claims are defined 
 in [k8s/base](k8s/base). The volumes are configured against an Azure File
-Share to store dags and initialization scripts. Finally, an nginx 
+Share to store dags and initialization scripts. Next, an nginx 
 ingress is defined under [k8s/ingress-nginx](k8s/ingress-nginx/aks-airflow-ingress-tls.yaml),
 configured with tls termination. Automated certificate generation is 
 configured against the [Let's Encrypt](https://cert-manager.io/docs/tutorials/acme/ingress/)
