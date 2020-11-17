@@ -6,7 +6,7 @@ metadata:
   namespace: airflow-tls
   annotations:
     # add an annotation indicating the issuer to use.
-    # cert-manager.io/cluster-issuer: letsencrypt-prod
+    # cert-manager.io/cluster-issuer: letsencrypt-staging
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx # use only with k8s version >= 1.18.0

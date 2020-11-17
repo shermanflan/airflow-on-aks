@@ -1,5 +1,7 @@
 apache-airflow==1.10.12
+azure-mgmt-datafactory==0.14.0
 #Authlib  # for oauth2
+boxsdk==2.10.0
 Flask-OAuthlib
 #cryptography==3.0
 #flask-bcrypt  # for web auth

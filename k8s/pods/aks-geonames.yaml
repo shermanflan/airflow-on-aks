@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: geonames
-  namespace: default
+  namespace: airflow-tls
   labels:
     name: geonames
     instance: geonames-pod
@@ -10,6 +10,7 @@ metadata:
     component: batch
     part-of: pods
 spec:
+  restartPolicy: Never  # Always
   containers:
     - name: geonames
       image: rkoH1pVL.azurecr.io/geonames:latest

@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: geonames
-  namespace: default
+  namespace: airflow-tls
   labels:
     name: geonames
     instance: geonames-job

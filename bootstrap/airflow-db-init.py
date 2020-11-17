@@ -88,9 +88,16 @@ def update_aci_connection(params, session=None):
 
 @provide_session
 def add_aci_config(key, path, session=None):
-    # TODO: Storing the full config as a variable is visible to
-    # anyone who can see the Variables screen. This is insecure
-    # so it would be preferable to use a key vault.
+    """
+    Storing the full config as a variable is visible to
+    anyone who can see the Variables screen. This is insecure
+    so it would be preferable to use a key vault.
+
+    :param key:
+    :param path:
+    :param session:
+    :return:
+    """
     with open(path, 'r') as f:
         config = json.load(f)
         Variable.set(key, value=config,
@@ -125,7 +132,8 @@ if __name__ == "__main__":
     update_redis_db(db_config['redis_default'])
     update_postgres_db(db_config['postgres_default'])
     update_airflow_db(db_config['airflow_db'])
-    update_aci_connection(db_config['azure_container_instances_default'])
+    # Using auth.json file for authentication.
+    # update_aci_connection(db_config['azure_container_instances_default'])
     add_azure_registry(db_config['azure_registry_default'])
 
     # if bool(os.environ.get('AIRFLOW__WEBSERVER__AUTHENTICATE', False)) \
@@ -134,9 +142,6 @@ if __name__ == "__main__":
     #     add_default_user()
 
     # logger.info('Updating variables...')
-
-    # TODO: Convert to configurable mapping.
     # aci_path = os.path.join(os.environ['AIRFLOW_HOME'],
-    #                         'scripts', 'metadata', 'box2lake.json')
-
+    #                         'scripts', 'metadata', 'geonames2lake.json')
     # add_aci_config('aci_config', aci_path)

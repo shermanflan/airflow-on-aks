@@ -1,24 +1,81 @@
-# airflow-local
-Repo with a customized airflow image aimed at the following use cases:
+# airflow-on-aks
+The primary goal of this repo is to provide the necessary scripts and 
+manifests required to automate a deployment of Airflow to AKS. Key to
+this enterprise deployment is supporting TLS termination via nginx ingress 
+and OAuth2 via Azure Active Directory.
+
+In addition, the following additional features are included. 
 
 - Local development via docker-compose
-- Azure Container Instances
-- Azure Kubernetes Services
-    - Includes support for TLS termination via nginx ingress
-    - Includes support for OAuth2 against Azure Active Directory
+- Support for Azure Container Instances
 
-## Docker Compose
-Multiple `docker-compose.yaml` configurations have been created for different
-use-cases.
+### To Do
 
-- Local single-tier development (default): LocalExecutor, single host
-    - [`docker-compose.yaml`](docker-compose.yml)
-- Local multi-tier template: CeleryExecutor, postgres/redis backends
-    - [`docker-compose-multi-node.yaml`](docker-compose-multi-tier.yml)
-- Azure Container Instances: CeleryExecutor, postgres/redis backends, 
-ACI-compatible
-    - [`docker-compose-aci.yaml`](aci/docker-compose-aci.yml)
-    
+- Use git repo sync for dags. 
+See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
+- Use k8s executor in an AKS deployment.
+    - https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html
+- Implement an MS Teams operator.
+- Create an airflow2 version
+
+## Airflow on Azure Kubernetes Service
+Key objectives include:
+
+- Deploy Airflow configured to use a Celery executor
+- Deploy Airflow configured to use the Kubernetes executor
+- Use the nginx [ingress](https://docs.microsoft.com/en-us/azure/aks/ingress-tls) 
+provided by the managed helm chart
+- Enable tls-termination using the [cert-mgr](https://cert-manager.io/docs/installation/kubernetes/) 
+controller via helm chart
+- Use a DNS zone with a registered domain (rikguz.com)
+- Secure Airflow using OAuth2 via Azure Active Directory
+- Include a plugin with operators, hooks, etc. to support orchestration
+in Azure
+
+### Pre-requisites
+In order to use the manifest files in this repo, a few pre-requisites
+are required.
+
+1. An Azure account with access to the az cli
+2. If using tls-termination and OAuth2, then a DNS zone is necessary
+along with a registered domain
+3. A storage account for hosting Airflow volumes as Azure file systems
+4. An Application Registration in Azure Active Directory for OAuth2
+
+### Airflow on AKS using Celery
+The manifests under [k8s/airflow](k8s/airflow) define an Airflow configuration 
+using the CeleryExecutor. In addition, various volume claims are defined 
+in [k8s/base](k8s/base). The volumes are configured against an Azure File
+Share to store dags and initialization scripts. Finally, an nginx 
+ingress is defined under [k8s/ingress-nginx](k8s/ingress-nginx/aks-airflow-ingress-tls.yaml),
+which configures the tls termination and certificate generation using the
+[Let's Encrypt issuer](https://cert-manager.io/docs/tutorials/acme/ingress/).
+
+The Airflow image used by the manifests is a customized version configured
+with RBAC and OAuth2 using the 1.10.2 version. It is baked with a modified
+[webserver_config.py](bootstrap/webserver_config.py) file. For full details,
+refer to the [Dockerfile](./Dockerfile).
+
+### Deployment
+Assuming all of the pre-requisites are satisfied, the Airflow deployment can
+be initiated by following these steps. The key script is [`az-add-aks.sh`](k8s/az-add-aks.sh),
+and it relies on a number of environment variables, which need to be 
+configured according to your Azure environment.
+
+1. Upload the scripts under [bootstrap](bootstrap) to an Azure file share
+referenced by the volumes defined in [k8s/base](k8s/base)
+2. Upload any dags to an Azure file share referenced by the volumes 
+defined in [k8s/base](k8s/base)
+3. Run the [`az-add-aks.sh`](k8s/az-add-aks.sh) script to build an AKS 
+cluster along with a container registry, helm chart installations, and 
+DNS zone updates.
+4. Then, run the [`aks-install-airflow-celery.sh`](k8s/aks-install-airflow-celery.sh) 
+script to deploy Airflow, the nginx ingress, and the cert-mgr certificate 
+controller.
+5. Your deployment should be up and running
+6. To delete the cluster, run the [`aks-drop.sh`](k8s/az-drop-aks.sh)
+script 
+   
 ## Azure Authentication for Web UI
 The airflow configuration uses the OAuth2 authorization code flow facilitated 
 by Flask-AppBuilder. A custom [web config](bootstrap/webserver_config.py) has 
@@ -48,7 +105,7 @@ A json key file has been created for authentication. This enables `contrib`
 Azure operators to connect to the tenant. To generate:
 
 1. Use az cli to login
-2. Run: `ad sp create-for-rbac --sdk-auth > airflow.azureauth`
+2. Run: `az ad sp create-for-rbac --sdk-auth > airflow.azureauth`
 
 ## Deploy to Azure Container Instances
 It is possible to deploy a set of Airflow containers to a single ACI group. 
@@ -87,21 +144,14 @@ Sample scripts for setting this up can be found in the [aci](aci/) folder.
 For more details, refer to the 
 [ACI documentation](https://docs.microsoft.com/en-us/azure/container-instances/tutorial-docker-compose).
 
-## Deploy to Azure Kubernetes Service
-Multiple Kubernetes manifest files have been defined under the [k8s](k8s/) 
-folder with support for the following features:
+## Docker Compose
+Multiple `docker-compose.yaml` configurations have been created for local
+dev/test purposes.
 
-- Airflow 1.10.2 running as a multi-tier k8s [service](k8s/airflow)
-- TLS termination facilitated by the [nginx ingress](k8s/ingress-nginx) 
-and the cert-manager [controller](k8s/cert-manager)
-
-## To Do
-
-- Use git repo sync for dags. 
-See [here](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
-- Use k8s executor in an AKS deployment.
-    - https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html
-- Implement a Teams operator.
-- Consider [plugins](https://airflow.readthedocs.io/en/1.10.12/plugins.html)
-as the approach for extending airflow.
-- Create an airflow2 version
+- Local single-tier development (default): LocalExecutor, single host
+    - [`docker-compose.yaml`](docker-compose.yml)
+- Local multi-tier template: CeleryExecutor, postgres/redis backends
+    - [`docker-compose-multi-node.yaml`](docker-compose-multi-tier.yml)
+- Azure Container Instances: CeleryExecutor, postgres/redis backends, 
+ACI-compatible
+    - [`docker-compose-aci.yaml`](aci/docker-compose-aci.yml)

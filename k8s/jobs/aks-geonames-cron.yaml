@@ -2,7 +2,7 @@ apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: geonames-cron
-  namespace: default
+  namespace: airfllow-tls
   labels:
     name: geonames
     instance: geonames-cron

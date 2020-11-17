@@ -44,32 +44,33 @@ spec:
       # imagePullSecrets:
       #   - name:  my-image-pull-secret
       volumes:
-        - name: "az-dags"
+        - name: az-dags
           persistentVolumeClaim:
             claimName: azure-claim-dags
-        - name: "az-scripts"
+        - name: az-scripts
           persistentVolumeClaim:
             claimName: azure-claim-scripts
-        - name: "az-init"
+        - name: az-init
           persistentVolumeClaim:
             claimName: azure-claim-init
+        - name: azure-spn
+          secret:
+            secretName: azure-spn-secret
+        - name: box-key-file
+          secret:
+            secretName: box-secret
         # Create config using kubectl create configmap
         # - name: "config"
         #   configMap:
         #     name: my-config
-        # Create secret using
-        # kubectl create secret tls ssl --cert=server.crt --key=server.key
-        # - name: certs
-        #   secret:
-        #     secretName: ssl
       initContainers:
         - name: airflow-wait-db
           image: busybox:1.32.0
           command: ['sh', '-c', "until nslookup airflow-postgres-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-postgres-service; sleep 2; done"]
           resources:
             requests:
-              cpu: "250m"
-              memory: "250Mi"
+              cpu: "100m"
+              memory: "100Mi"
             limits:
               cpu: "500m"
               memory: "500Mi"
@@ -79,9 +80,9 @@ spec:
           command:
               - "./scripts/airflow-init.sh"
           volumeMounts:
-            - name: "az-scripts"
+            - name: az-scripts
               mountPath: "/opt/airflow/scripts"
-            - name: "az-init"
+            - name: az-init
               mountPath: "/opt/airflow/init"
           env:
             - name: AIRFLOW__CORE__EXECUTOR
@@ -100,31 +101,36 @@ spec:
               value: "True"
           resources:
             requests:
-              cpu: "500m"
-              memory: "500Mi"
+              cpu: "100m"
+              memory: "100Mi"
             limits:
               cpu: "1000m"
               memory: "1Gi"
       containers:
         - name: airflow
-          image: rkoH1pVL.azurecr.io/airflow:1.10.12
-          # image: rkoH1pVL.azurecr.io/airflow:1.10.12-slate
+          # image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12-united
           imagePullPolicy: Always  # IfNotPresent
           command:
               - "./scripts/airflow-web-start.sh"
           volumeMounts:
-            - name: "az-dags"
+            - name: az-dags
               mountPath: "/opt/airflow/dags"
-            - name: "az-scripts"
+            - name: az-scripts
               mountPath: "/opt/airflow/scripts"
-            - name: "az-init"
+            - name: az-init
               mountPath: "/opt/airflow/init"
+            - name: azure-spn
+              mountPath: "/opt/airflow/az-sec"
+              readOnly: true
+            - name: box-key-file
+              mountPath: "/opt/airflow/box-sec"
+              readOnly: true
             # - name: "config"
             #   mountPath: "/data/my-config"
-            # - name: certs
-            #   mountPath: "/ssl"
-            #   readOnly: true
           env:
+            - name: AIRFLOW__WEBSERVER__DAG_DEFAULT_VIEW
+              value: "graph"
             - name: AIRFLOW__CORE__LOGGING_LEVEL
               value: "INFO"
             - name: AIRFLOW__CORE__EXECUTOR
@@ -147,6 +153,8 @@ spec:
               value: "airflow-smtp-svc"
             - name: AIRFLOW__SMTP__SMTP_STARTTLS
               value: "False"
+            - name: AIRFLOW__SMTP__SMTP_MAIL_FROM
+              value: "airflow@smtp.rikguz.com"
             - name: AIRFLOW__WEBSERVER__RBAC
               value: "True"
             - name: AIRFLOW__WEBSERVER__AUTHENTICATE
@@ -166,6 +174,10 @@ spec:
                 secretKeyRef:
                   name: az-oauth-secret
                   key: azure-app-key
+            - name: AZURE_AUTH_LOCATION
+              value: "/opt/airflow/az-sec/azure-auth"
+            - name: BOX_AUTH_LOCATION
+              value: "/opt/airflow/box-sec/box-auth"
             # - name: FROM_CONFIG_MAP
             #   valueFrom:
             #     configMapKeyRef:
@@ -173,11 +185,11 @@ spec:
             #       key: another-param
           resources:
             requests:
-              cpu: "1000m"
+              cpu: "1200m"
               memory: "2048Mi"
             limits:
-              cpu: "2000m"
-              memory: "4Gi"
+              cpu: "4000m"
+              memory: "6Gi"
           ports:
             - name: http
               containerPort: 8080

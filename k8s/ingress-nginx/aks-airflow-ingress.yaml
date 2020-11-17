@@ -27,7 +27,7 @@ spec:
   #     - celery.0cf33844e91741c88f93.eastus.aksapp.io
   #     secretName: celery-tls-secret
   rules:
-    - host: airflow.condesa1931.com
+    - host: airflow.rikguz.com
       http:
         paths:
         - path: /
@@ -37,7 +37,7 @@ spec:
               name: airflow-web-service
               port: 
                 number: 8080
-    - host: celery.0cf33844e91741c88f93.eastus.aksapp.io
+    - host: celery.rikguz.com
       http:
         paths:
         - path: /

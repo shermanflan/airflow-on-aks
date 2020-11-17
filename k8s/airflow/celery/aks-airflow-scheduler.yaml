@@ -31,20 +31,26 @@ spec:
       nodeSelector:
         "beta.kubernetes.io/os": linux
       volumes:
-        - name: "az-dags"
+        - name: az-dags
           persistentVolumeClaim:
             claimName: azure-claim-dags
-        - name: "az-scripts"
+        - name: az-scripts
           persistentVolumeClaim:
             claimName: azure-claim-scripts
+        - name: azure-spn
+          secret:
+            secretName: azure-spn-secret
+        - name: box-key-file
+          secret:
+            secretName: box-secret
       initContainers:
         - name: airflow-wait-web
           image: busybox:1.32.0
           command: ['sh', '-c', "until nslookup airflow-web-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-web-service; sleep 5; done"]
           resources:
             requests:
-              cpu: "250m"
-              memory: "250Mi"
+              cpu: "100m"
+              memory: "200Mi"
             limits:
               cpu: "500m"
               memory: "500Mi"
@@ -55,10 +61,16 @@ spec:
           command:
               - "./scripts/airflow-scheduler-start.sh"
           volumeMounts:
-            - name: "az-dags"
+            - name: az-dags
               mountPath: "/opt/airflow/dags"
-            - name: "az-scripts"
+            - name: az-scripts
               mountPath: "/opt/airflow/scripts"
+            - name: azure-spn
+              mountPath: "/opt/airflow/az-sec"
+              readOnly: true
+            - name: box-key-file
+              mountPath: "/opt/airflow/box-sec"
+              readOnly: true
           env:
             - name: AIRFLOW__CORE__LOGGING_LEVEL
               value: "INFO"
@@ -82,13 +94,19 @@ spec:
               value: "airflow-smtp-svc"
             - name: AIRFLOW__SMTP__SMTP_STARTTLS
               value: "False"
+            - name: AIRFLOW__SMTP__SMTP_MAIL_FROM
+              value: "airflow@smtp.rikguz.com"
+            - name: AZURE_AUTH_LOCATION
+              value: "/opt/airflow/az-sec/azure-auth"
+            - name: BOX_AUTH_LOCATION
+              value: "/opt/airflow/box-sec/box-auth"
           resources:
             requests:
-              cpu: "1000m"
-              memory: "500Mi"
+              cpu: "500m"
+              memory: "512Mi"
             limits:
-              cpu: "2000m"
-              memory: "2Gi"
+              cpu: "4000m"
+              memory: "4Gi"
           # readinessProbe:
           #   httpGet:
           #     path: /health
