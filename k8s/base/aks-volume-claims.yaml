@@ -47,3 +47,19 @@ spec:
   resources:
     requests:
       storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azure-claim-logs
+  namespace: airflow-tls
+spec:
+  selector:
+    matchLabels:
+      volume: azure-file-logs
+  accessModes:
+    - ReadWriteMany
+  storageClassName: azurefile
+  resources:
+    requests:
+      storage: 5Gi

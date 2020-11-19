@@ -74,3 +74,28 @@ spec:
     - gid=1000
     - mfsymlinks
     - nobrl
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: azure-file-logs
+  namespace: airflow-tls
+  labels:
+      volume: azure-file-logs
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 5Gi
+  storageClassName: azurefile
+  azureFile:
+    secretName: az-file-secret
+    shareName: airflow-logs
+    readOnly: false
+  mountOptions:
+    - dir_mode=0777
+    - file_mode=0777
+    - uid=1000
+    - gid=1000
+    - mfsymlinks
+    - nobrl
