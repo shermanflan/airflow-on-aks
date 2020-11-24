@@ -4,6 +4,7 @@ metadata:
   name: airflow-configmap
   namespace: airflow-tls
 data:
+  # Reference: https://github.com/apache/airflow/tree/1.10.12/airflow/config_templates
   airflow.cfg: |
     [core]
     logging_level = INFO
