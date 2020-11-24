@@ -1,5 +1,5 @@
 """
-## redis_q2_ex.py
+## redis_q1_ex.py
 Example using redis API.
 """
 from datetime import datetime, timedelta
