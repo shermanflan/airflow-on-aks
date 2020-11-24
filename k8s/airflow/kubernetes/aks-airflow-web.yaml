@@ -8,7 +8,7 @@ spec:
   selector:
     matchLabels:
       name: airflow-web
-      instance: airflow-web-celery
+      instance: airflow-web-k8s
       version: "1.0.0"
       component: web
       part-of: airflow
@@ -26,7 +26,7 @@ spec:
       name: airflow-web
       labels:
         name: airflow-web
-        instance: airflow-web-celery
+        instance: airflow-web-k8s
         version: "1.0.0"
         component: web
         part-of: airflow
@@ -34,8 +34,7 @@ spec:
       hostname: airflow-web
       nodeSelector:
         "beta.kubernetes.io/os": linux
-      # imagePullSecrets:
-      #   - name:  my-image-pull-secret
+      serviceAccountName: airflow-rbac
       volumes:
         - name: az-dags
           persistentVolumeClaim:
@@ -46,16 +45,18 @@ spec:
         - name: az-init
           persistentVolumeClaim:
             claimName: azure-claim-init
+        - name: az-logs
+          persistentVolumeClaim:
+            claimName: azure-claim-logs
         - name: azure-spn
           secret:
             secretName: azure-spn-secret
         - name: box-key-file
           secret:
             secretName: box-secret
-        # Create config using kubectl create configmap
-        # - name: "config"
-        #   configMap:
-        #     name: my-config
+        - name: airflow-configmap
+          configMap:
+            name: airflow-configmap
       initContainers:
         - name: airflow-wait-db
           image: busybox:1.32.0
@@ -74,24 +75,15 @@ spec:
               - "./scripts/airflow-init.sh"
           volumeMounts:
             - name: az-scripts
-              mountPath: "/opt/airflow/scripts"
+              mountPath: /opt/airflow/scripts
             - name: az-init
-              mountPath: "/opt/airflow/init"
-          env:
-            - name: AIRFLOW__CORE__EXECUTOR
-              value: "KubernetesExecutor"
-            - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-service/airflow"
-            # - name: AIRFLOW__CELERY__BROKER_URL
-            #   value: "redis://airflow-redis-service:6379/0"
-            # - name: AIRFLOW__CELERY__RESULT_BACKEND
-            #   value: "db+postgresql://sa:pwd@airflow-postgres-service/airflow"
-            - name: AIRFLOW__CORE__FERNET_KEY
-              value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
-            - name: AIRFLOW__WEBSERVER__RBAC
-              value: "True"
-            - name: AIRFLOW__WEBSERVER__AUTHENTICATE
-              value: "True"
+              mountPath: /opt/airflow/init
+            - name: az-logs
+              mountPath: /opt/airflow/logs
+              subPath: logs
+            - name: airflow-configmap
+              mountPath: /opt/airflow/airflow.cfg
+              subPath: airflow.cfg
           resources:
             requests:
               cpu: "100m"
@@ -101,27 +93,31 @@ spec:
               memory: "1Gi"
       containers:
         - name: airflow
-          # image: rkoH1pVL.azurecr.io/airflow:1.10.12
-          image: rkoH1pVL.azurecr.io/airflow:1.10.12-united
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          # image: rkoH1pVL.azurecr.io/airflow:1.10.12-united
           imagePullPolicy: Always  # IfNotPresent
           command:
               - "./scripts/airflow-web-start.sh"
           volumeMounts:
             - name: az-dags
-              mountPath: "/opt/airflow/dags"
+              mountPath: /opt/airflow/dags
             - name: az-scripts
-              mountPath: "/opt/airflow/scripts"
+              mountPath: /opt/airflow/scripts
             - name: az-init
-              mountPath: "/opt/airflow/init"
+              mountPath: /opt/airflow/init
+            - name: az-logs
+              mountPath: /opt/airflow/logs
+              subPath: logs
             - name: azure-spn
-              mountPath: "/opt/airflow/az-sec"
+              mountPath: /opt/airflow/az-sec
               readOnly: true
             - name: box-key-file
-              mountPath: "/opt/airflow/box-sec"
+              mountPath: /opt/airflow/box-sec
               readOnly: true
+            - name: airflow-configmap
+              mountPath: /opt/airflow/airflow.cfg
+              subPath: airflow.cfg
           env:
-            - name: AIRFLOW__KUBERNETES__AIRFLOW_CONFIGMAP
-              value: airflow-k8s-configmap
             - name: AZURE_TENANT_ID
               valueFrom:
                 secretKeyRef:
@@ -138,12 +134,12 @@ spec:
                   name: az-oauth-secret
                   key: azure-app-key
             - name: AZURE_AUTH_LOCATION
-              value: "/opt/airflow/az-sec/azure-auth"
+              value: /opt/airflow/az-sec/azure-auth
             - name: BOX_AUTH_LOCATION
-              value: "/opt/airflow/box-sec/box-auth"
-          envFrom:
-            - configMapRef:
-                name: airflow-k8s-configmap
+              value: /opt/airflow/box-sec/box-auth
+          # envFrom:
+          #   - configMapRef:
+          #       name: airflow-k8s-configmap
           resources:
             requests:
               cpu: "1200m"
@@ -159,7 +155,6 @@ spec:
               containerPort: 5555
               protocol: TCP
 ---
-# kubectl expose is a synonym for this stanza
 apiVersion: v1
 kind: Service
 metadata:
@@ -167,18 +162,16 @@ metadata:
   namespace: airflow-tls
   labels:
     name: airflow-web-service
-    instance: airflow-web-celery
+    instance: airflow-web-k8s
     version: "1.0.0"
     component: web
     part-of: airflow
 spec:
-  type: ClusterIP # LoadBalancer
+  type: LoadBalancer # ClusterIP
   # loadBalancerIP: 52.224.76.127
   selector:
-    # Load balance traffic across Pods matching
-    # this label selector
     name: airflow-web
-    instance: airflow-web-celery
+    instance: airflow-web-k8s
     version: "1.0.0"
     component: web
     part-of: airflow
@@ -192,5 +185,5 @@ spec:
       port: 5555
       # targetPort: 5555
   # externalTrafficPolicy: Local  # Maintain client IP
-  # loadBalancerSourceRanges:
-  #   - "136.49.2.8/32"
+  loadBalancerSourceRanges:
+    - "136.49.2.8/32"

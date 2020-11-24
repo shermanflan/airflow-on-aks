@@ -18,7 +18,7 @@ services:
 #            - smtp-local
         env_file: .env
         environment:
-            - AIRFLOW__KUBERNETES__ENV_FROM_CONFIGMAP_REF= airflow-k8s-configmap
+            - AIRFLOW__KUBERNETES__ENV_FROM_CONFIGMAP_REF=airflow-k8s-configmap
             - AIRFLOW__CORE__LOGGING_LEVEL=INFO
             - AIRFLOW__CORE__EXECUTOR=KubernetesExecutor
             - AIRFLOW__KUBERNETES__IN_CLUSTER=False
