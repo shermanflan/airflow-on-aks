@@ -1,0 +1,189 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-web-deploy
+  namespace: airflow-tls
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: airflow-web
+      instance: airflow-web-k8s
+      version: "1.0.0"
+      component: web
+      part-of: airflow
+  strategy:
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 0
+    type: RollingUpdate
+  # revisionHistoryLimit: 3
+  # minReadySeconds: 60
+  # progressDeadlineSeconds: 600
+  # Pods
+  template:
+    metadata:
+      name: airflow-web
+      labels:
+        name: airflow-web
+        instance: airflow-web-k8s
+        version: "1.0.0"
+        component: web
+        part-of: airflow
+    spec:
+      hostname: airflow-web
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      serviceAccountName: airflow-rbac
+      volumes:
+        - name: az-dags
+          persistentVolumeClaim:
+            claimName: azure-claim-dags
+        - name: az-scripts
+          persistentVolumeClaim:
+            claimName: azure-claim-scripts
+        - name: az-init
+          persistentVolumeClaim:
+            claimName: azure-claim-init
+        - name: az-logs
+          persistentVolumeClaim:
+            claimName: azure-claim-logs
+        - name: azure-spn
+          secret:
+            secretName: azure-spn-secret
+        - name: box-key-file
+          secret:
+            secretName: box-secret
+        - name: airflow-configmap
+          configMap:
+            name: airflow-configmap
+      initContainers:
+        - name: airflow-wait-db
+          image: busybox:1.32.0
+          command: ['sh', '-c', "until nslookup airflow-postgres-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-postgres-service; sleep 2; done"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+            limits:
+              cpu: "500m"
+              memory: "500Mi"
+        - name: airflow-init-db
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          imagePullPolicy: Always  # IfNotPresent
+          command:
+              - "./scripts/airflow-init.sh"
+          volumeMounts:
+            - name: az-scripts
+              mountPath: /opt/airflow/scripts
+            - name: az-init
+              mountPath: /opt/airflow/init
+            - name: az-logs
+              mountPath: /opt/airflow/logs
+              subPath: logs
+            - name: airflow-configmap
+              mountPath: /opt/airflow/airflow.cfg
+              subPath: airflow.cfg
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "100Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+      containers:
+        - name: airflow
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          # image: rkoH1pVL.azurecr.io/airflow:1.10.12-united
+          imagePullPolicy: Always  # IfNotPresent
+          command:
+              - "./scripts/airflow-web-start.sh"
+          volumeMounts:
+            - name: az-dags
+              mountPath: /opt/airflow/dags
+            - name: az-scripts
+              mountPath: /opt/airflow/scripts
+            - name: az-init
+              mountPath: /opt/airflow/init
+            - name: az-logs
+              mountPath: /opt/airflow/logs
+              subPath: logs
+            - name: azure-spn
+              mountPath: /opt/airflow/az-sec
+              readOnly: true
+            - name: box-key-file
+              mountPath: /opt/airflow/box-sec
+              readOnly: true
+            - name: airflow-configmap
+              mountPath: /opt/airflow/airflow.cfg
+              subPath: airflow.cfg
+          env:
+            - name: AZURE_TENANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: az-oauth-secret
+                  key: azure-tenant-id
+            - name: AZURE_APP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: az-oauth-secret
+                  key: azure-app-id
+            - name: AZURE_APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: az-oauth-secret
+                  key: azure-app-key
+            - name: AZURE_AUTH_LOCATION
+              value: /opt/airflow/az-sec/azure-auth
+            - name: BOX_AUTH_LOCATION
+              value: /opt/airflow/box-sec/box-auth
+          # envFrom:
+          #   - configMapRef:
+          #       name: airflow-k8s-configmap
+          resources:
+            requests:
+              cpu: "1200m"
+              memory: "2048Mi"
+            limits:
+              cpu: "4000m"
+              memory: "6Gi"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            - name: celery
+              containerPort: 5555
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-web-service
+  namespace: airflow-tls
+  labels:
+    name: airflow-web-service
+    instance: airflow-web-k8s
+    version: "1.0.0"
+    component: web
+    part-of: airflow
+spec:
+  type: LoadBalancer # ClusterIP
+  # loadBalancerIP: 52.224.76.127
+  selector:
+    name: airflow-web
+    instance: airflow-web-k8s
+    version: "1.0.0"
+    component: web
+    part-of: airflow
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      # targetPort: 8080
+    - name: celery
+      protocol: TCP
+      port: 5555
+      # targetPort: 5555
+  # externalTrafficPolicy: Local  # Maintain client IP
+  loadBalancerSourceRanges:
+    - "136.49.2.8/32"

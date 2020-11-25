@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-scheduler-deploy
+  namespace: airflow-tls
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: airflow-scheduler
+      instance: airflow-scheduler-k8s
+      version: "1.0.0"
+      component: scheduler
+      part-of: airflow
+  strategy:
+    rollingUpdate:
+      maxSurge: 100%
+      maxUnavailable: 0
+    type: RollingUpdate
+  # minReadySeconds: 60
+  # progressDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        name: airflow-scheduler
+        instance: airflow-scheduler-k8s
+        version: "1.0.0"
+        component: scheduler
+        part-of: airflow
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      serviceAccountName: airflow-rbac
+      volumes:
+        - name: az-dags
+          persistentVolumeClaim:
+            claimName: azure-claim-dags
+        - name: az-scripts
+          persistentVolumeClaim:
+            claimName: azure-claim-scripts
+        - name: az-logs
+          persistentVolumeClaim:
+            claimName: azure-claim-logs
+        - name: azure-spn
+          secret:
+            secretName: azure-spn-secret
+        - name: box-key-file
+          secret:
+            secretName: box-secret
+        - name: airflow-configmap
+          configMap:
+            name: airflow-configmap
+      initContainers:
+        - name: airflow-wait-web
+          image: busybox:1.32.0
+          command: ['sh', '-c', "until nslookup airflow-web-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-web-service; sleep 5; done"]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "200Mi"
+            limits:
+              cpu: "500m"
+              memory: "500Mi"
+      containers:
+        - name: airflow
+          image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          imagePullPolicy: Always  # IfNotPresent
+          command:
+              - "./scripts/airflow-scheduler-start.sh"
+          volumeMounts:
+            - name: az-dags
+              mountPath: /opt/airflow/dags
+            - name: az-scripts
+              mountPath: /opt/airflow/scripts
+            - name: az-logs
+              mountPath: /opt/airflow/logs
+              subPath: logs
+            - name: azure-spn
+              mountPath: /opt/airflow/az-sec
+              readOnly: true
+            - name: box-key-file
+              mountPath: /opt/airflow/box-sec
+              readOnly: true
+            - name: airflow-configmap
+              mountPath: /opt/airflow/airflow.cfg
+              subPath: airflow.cfg
+          env:
+            - name: AZURE_AUTH_LOCATION
+              value: /opt/airflow/az-sec/azure-auth
+            - name: BOX_AUTH_LOCATION
+              value: /opt/airflow/box-sec/box-auth
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "1024Mi"
+            limits:
+              cpu: "4000m"
+              memory: "4Gi"

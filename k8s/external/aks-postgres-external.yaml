@@ -3,6 +3,7 @@ kind: Service
 apiVersion: v1
 metadata:
   name: my-paas-db
+  namespace: airflow-tls
 spec:
   type: ExternalName
   externalName: my-database.azure.com

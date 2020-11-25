@@ -32,7 +32,7 @@ default_args = {
     'email_on_retry': False,
     'retries': 0,
     'retry_delay': timedelta(seconds=5),
-    'queue': 'airq2',
+    'queue': 'airq1',
     'catchup': False,
     # 'pool': 'backfill',
     # 'priority_weight': 10,
@@ -52,7 +52,7 @@ default_args = {
 with DAG('box2lake_sensor',
          default_args=default_args,
          description='Example using Box.com api',
-         schedule_interval=None,  # "0 0 * * *" or "@daily" or timedelta(hours=2)
+         schedule_interval="0 0 * * *",  # "0 0 * * *" or "@daily" or timedelta(hours=2)
          start_date=days_ago(1),
          tags=['azure', 'aks', 'box.com']
          ) as dag:
@@ -80,6 +80,7 @@ with DAG('box2lake_sensor',
     box2adls_pod_task = KubernetesPodOperator(
         task_id="box2adls_pod_task",
         namespace='airflow-tls',
+        service_account_name='airflow-rbac',
         name='boxflow',
         image='rkoH1pVL.azurecr.io/box2adls:latest',
         image_pull_policy='Always',
@@ -126,20 +127,25 @@ with DAG('box2lake_sensor',
         # pod_template_file='/opt/airflow/dags/config/aks-geonames.yaml'
     )
 
-    body = """
-        Log: <a href="{{ ti.log_url }}">Link</a><br>
-        Host: {{ ti.hostname }}<br>
-        Log file: {{ ti.log_filepath }}<br>
-        Mark success: <a href="{{ ti.mark_success_url }}">Link</a><br>
-    """
+    # body = """
+    #     Log: <a href="{{ ti.log_url }}">Link</a><br>
+    #     Host: {{ ti.hostname }}<br>
+    #     Log file: {{ ti.log_filepath }}<br>
+    #     Mark success: <a href="{{ ti.mark_success_url }}">Link</a><br>
+    # """
+    #
+    # email_task = EmailOperator(
+    #     task_id= 'email_task',
+    #     to='shermanflan@gmail.com',
+    #     subject="Test from Airflow: {{ ti.xcom_pull(task_ids='wait_for_box_daily') }}",
+    #     html_content=body,
+    #     pool='utility_pool',
+    # )
 
-    email_task = EmailOperator(
-        task_id= 'email_task',
-        to='shermanflan@gmail.com',
-        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='wait_for_box_daily') }}",
-        html_content=body,
-        pool='utility_pool',
+    print_date2 = BashOperator(
+        task_id='print_date2',
+        bash_command="echo {{ ts }}"
     )
 
     [wait_for_box_daily, wait_for_box_weekly] >> box2adls_pod_task
-    box2adls_pod_task >> email_task
+    box2adls_pod_task >> print_date2

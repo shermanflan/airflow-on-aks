@@ -4,19 +4,16 @@ Example using Azure operators for ADF and AKS.
 
 - Code inspired by [contrib repo](https://github.com/apache/airflow/tree/1.10.12/airflow/contrib).
 """
-from datetime import date, datetime, timedelta
-import os
+from datetime import timedelta
 
 from airflow import DAG
 from airflow.contrib.operators.kubernetes_pod_operator import (
     KubernetesPodOperator
 )
 from airflow.kubernetes.secret import Secret
-from airflow.models.variable import Variable
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.email_operator import EmailOperator
 from airflow.utils.dates import days_ago
-# from airflow.utils import timezone
 
 from bsh_azure.operators.azure_data_factory_operator import (
     DataFactoryOperator
@@ -29,8 +26,8 @@ default_args = {
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 0,
-    'retry_delay': timedelta(minutes=1),
-    'catchup': False,
+    'retry_delay': timedelta(seconds=5),
+    # 'catchup': False,
     'queue': 'airq1',
     'pool': 'default_pool',
     # 'priority_weight': 10,
@@ -53,7 +50,7 @@ default_args = {
 with DAG('geonames_e2e',
          default_args=default_args,
          description='Example using Azure ADF operator',
-         schedule_interval=None,  # "@once",
+         schedule_interval="@once",  # "@once",
          start_date=days_ago(1),
          tags=['azure', 'aks', 'adf'],
          ) as dag:
@@ -62,12 +59,23 @@ with DAG('geonames_e2e',
 
     print_date = BashOperator(
         task_id='print_date',
-        bash_command="echo {{ ts }}"
+        bash_command="echo {{ ts }}",
+        # Passed to PodGenerator
+        # https://github.com/apache/airflow/blob/1.10.12/airflow/kubernetes/pod_generator.py
+        executor_config={
+            "KubernetesExecutor": {
+                "namespace": "airflow-tls",
+                "service_account_name": "airflow-rbac",
+                "labels": {"source": "airflow"},
+                "restart_policy": "Always"
+            }
+        }
     )
 
     geonames_pod_task = KubernetesPodOperator(
         task_id="geonames_pod_task",
         namespace='airflow-tls',
+        service_account_name='airflow-rbac',
         name='geoflow',
         image='rkoH1pVL.azurecr.io/geonames:latest',
         image_pull_policy='Always',
@@ -83,7 +91,6 @@ with DAG('geonames_e2e',
                   'CENSUS_COUNTY_NAME': 'MasterData.CountyProvince',
                   'GEONAMES_ZIPCODE_NAME': 'MasterData.ZipCode',
                   'LAKE_ACCOUNT_NAME': 'airflowstoragesandbox',
-                  # 'LAKE_ACCOUNT_KEY': '',
                   'LAKE_CONTAINER_NAME': 'enterprisedata',
                   'LAKE_BASE_PATH': 'Raw/Master Data/Geography/Brightspring',
                   },
@@ -96,37 +103,45 @@ with DAG('geonames_e2e',
             'limit_memory': '1Gi', 'limit_cpu': '1000m'
         },
         in_cluster=True,
-        # cluster_context='',
         is_delete_operator_pod=False,
-        get_logs=True,
-        log_events_on_failure=True
-        # config_file='/opt/airflow/k8s-sec/kube-config',
-        # NOTE: this will not work until 1.10.13
-        # pod_template_file='/opt/airflow/dags/config/aks-geonames.yaml'
+        # get_logs=True,
+        # log_events_on_failure=True
     )
 
-    geonames_adf_task = DataFactoryOperator(
-        task_id='geonames_adf_task',
-        resource_group_name='airflow-sandbox',
-        factory_name='bshGeonamestoASDB',
-        pipeline_name='LoadGeographies',
-        # adf_conn_id=None,
-        # no_wait=True
+    # geonames_adf_task = DataFactoryOperator(
+    #     task_id='geonames_adf_task',
+    #     resource_group_name='airflow-sandbox',
+    #     factory_name='bshGeonamestoASDB',
+    #     pipeline_name='LoadGeographies',
+    # )
+
+    # body = """
+    #     Log: <a href="{{ ti.log_url }}">Link</a><br>
+    #     Host: {{ ti.hostname }}<br>
+    #     Log file: {{ ti.log_filepath }}<br>
+    #     Mark success: <a href="{{ ti.mark_success_url }}">Link</a><br>
+    # """
+    #
+    # email_task = EmailOperator(
+    #     task_id= 'email_task',
+    #     to='shermanflan@gmail.com',
+    #     subject="Test from Airflow: {{ ti.xcom_pull(task_ids='print_date') }}",
+    #     html_content=body,
+    #     pool='utility_pool',
+    # )
+
+    print_date2 = BashOperator(
+        task_id='print_date2',
+        bash_command="echo {{ ts }}",
+        executor_config={
+            "KubernetesExecutor": {
+                "namespace": "airflow-tls",
+                "service_account_name": "airflow-rbac",
+                "labels": {"source": "airflow"},
+                "restart_policy": "Always"
+            }
+        }
     )
 
-    body = """
-        Log: <a href="{{ ti.log_url }}">Link</a><br>
-        Host: {{ ti.hostname }}<br>
-        Log file: {{ ti.log_filepath }}<br>
-        Mark success: <a href="{{ ti.mark_success_url }}">Link</a><br>
-    """
-
-    email_task = EmailOperator(
-        task_id= 'email_task',
-        to='shermanflan@gmail.com',
-        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='print_date') }}",
-        html_content=body,
-        pool='utility_pool',
-    )
-
-    print_date >> geonames_pod_task >> geonames_adf_task >> email_task
+    print_date >> geonames_pod_task >> print_date2
+    # print_date >> geonames_pod_task >> geonames_adf_task >> print_date2

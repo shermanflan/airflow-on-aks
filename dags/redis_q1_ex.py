@@ -1,5 +1,5 @@
 """
-## redis_q2_ex.py
+## redis_q1_ex.py
 Example using redis API.
 """
 from datetime import datetime, timedelta
@@ -43,9 +43,9 @@ def branch_func(**context):
     xcom_value = bool(ti.xcom_pull(task_ids='write_kv',
                                    key='redis-branch-test'))
     if xcom_value:
-        return 'email_task_1'
+        return 'print_date'
     else:
-        return 'email_task_2'
+        return 'print_date2'
 
 
 def set_redis(key, value, **context):
@@ -80,7 +80,7 @@ with DAG('redis_q1_ex',
         python_callable=set_redis,
         op_kwargs={
             'key': 'my-airflow:rko',
-            'value': f'test {datetime.now()}'
+            'value': f'test21 {datetime.now()}'
         },
         provide_context=True
     )
@@ -105,29 +105,40 @@ with DAG('redis_q1_ex',
         provide_context=True,
         python_callable=branch_func)
 
-    body = """
-        Log: <a href="{{ti.log_url}}">Link</a><br>
-        Host: {{ti.hostname}}<br>
-        Log file: {{ti.log_filepath}}<br>
-        Mark success: <a href="{{ti.mark_success_url}}">Link</a><br>
-        Follower branch: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}<br>
-    """
 
-    email_task_1 = EmailOperator(
-        task_id= 'email_task_1',
-        to='shermanflan@gmail.com',
-        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}",
-        html_content=body,
-        pool='utility_pool'
+    print_date = BashOperator(
+        task_id='print_date',
+        bash_command="echo {{ ts }}"
     )
 
-    email_task_2 = EmailOperator(
-        task_id= 'email_task_2',
-        to='shermanflan@gmail.com',
-        subject="Test from Airflow: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}",
-        html_content=body,
-        pool='utility_pool'
+    print_date2 = BashOperator(
+        task_id='print_date2',
+        bash_command="echo {{ ts }}"
     )
+
+    # body = """
+    #     Log: <a href="{{ti.log_url}}">Link</a><br>
+    #     Host: {{ti.hostname}}<br>
+    #     Log file: {{ti.log_filepath}}<br>
+    #     Mark success: <a href="{{ti.mark_success_url}}">Link</a><br>
+    #     Follower branch: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}<br>
+    # """
+
+    # email_task_1 = EmailOperator(
+    #     task_id= 'email_task_1',
+    #     to='shermanflan@gmail.com',
+    #     subject="Test from Airflow: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}",
+    #     html_content=body,
+    #     pool='utility_pool'
+    # )
+
+    # email_task_2 = EmailOperator(
+    #     task_id= 'email_task_2',
+    #     to='shermanflan@gmail.com',
+    #     subject="Test from Airflow: {{ ti.xcom_pull(task_ids='write_kv', key='redis-test') }}",
+    #     html_content=body,
+    #     pool='utility_pool'
+    # )
 
     write_kv >> [task_for_q, read_kv] >> branch_task
-    branch_task >> [email_task_1, email_task_2]
+    branch_task >> [print_date, print_date2]

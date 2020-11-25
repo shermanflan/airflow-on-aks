@@ -69,9 +69,9 @@ az aks create \
     --no-ssh-key \
     --attach-acr $REGISTRY \
     --enable-addons monitoring \
-    --workspace-resource-id "${WORKSPACE_ID}" \
-    --disable-rbac
-
+    --workspace-resource-id "${WORKSPACE_ID}"
+    
+    # --disable-rbac
     # --debug
     # --dns-name-prefix condesa \
     # --node-osdisk-size 50 \

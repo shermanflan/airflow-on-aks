@@ -76,7 +76,18 @@ controller
 5. Your deployment should be up and running
 6. To delete the cluster, run the [`aks-drop.sh`](k8s/az-drop-aks.sh)
 script
-   
+
+### [RBAC](https://github.com/rolanddb/airflow-on-kubernetes/blob/master/README.md#rbac)
+"If your cluster has [RBAC](https://kubernetes.io/docs/admin/authorization/rbac/) 
+turned on, and you want to launch Pods from Airflow, you will need to bind 
+the appropriate roles to the serviceAccount of the Pod that wants to schedule 
+other Pods. Typically, this means that the Workers (when using CeleryExecutor) 
+or the Scheduler (using LocalExecutor or the new KubernetesPodExecutor) need 
+extra permissions. You'll need to grant the 'watch/create' verbs on Pods."
+
+See [here](https://medium.com/@ipeluffo/running-apache-airflow-locally-on-kubernetes-minikube-31f308e3247a#:~:text=AIRFLOW__KUBERNETES__WORKER_CONTAINER_REPOSITORY%20%3A%20all%20env%20vars%20with%20the,be%20run%20on%20a%20Pod.) 
+for an example permissions declaration.
+
 ## Azure Authentication for Web UI
 The airflow configuration uses the OAuth2 authorization code flow facilitated 
 by Flask-AppBuilder. A custom [web config](bootstrap/webserver_config.py) has 
