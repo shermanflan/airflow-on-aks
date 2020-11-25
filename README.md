@@ -9,16 +9,6 @@ In addition, the following additional features are included.
 - Local development via docker-compose
 - Support for Azure Container Instances
 
-### To Do
-
-- Use [git repo sync](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
-for dags
-- Use the [Kubernetes Executor](https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html) 
-in an AKS deployment
-- Implement an MS Teams operator
-- Create an airflow2 version upon release
-- Deploy using the "official" Airflow helm chart
-
 ## Airflow on Azure Kubernetes Service
 Key objectives include:
 
@@ -33,7 +23,7 @@ controller provided by the managed helm chart
 - Include a plugin with operators, hooks, etc. to support orchestration
 in Azure
 
-### Pre-requisites
+## Pre-requisites
 In order to use the manifest files in this repo, a few pre-requisites
 are required.
 
@@ -43,7 +33,7 @@ along with a registered domain
 3. A storage account for hosting Airflow volumes as Azure file systems
 4. An Application Registration in Azure Active Directory for OAuth2
 
-### Airflow on AKS using Celery
+## Airflow on AKS using Celery
 The manifests under [k8s/airflow](k8s/airflow) define an Airflow configuration 
 using the Celery Executor. In addition, various volume claims are defined 
 in [k8s/base](k8s/base). The volumes are configured against an Azure File
@@ -111,18 +101,28 @@ the `username` field in `ab_user`
 - Using personal hotmail accounts can cause issues reading the JWT (see 
 [oauthlib](https://github.com/oauthlib/oauthlib/blob/v2.1.0/oauthlib/oauth2/rfc6749/clients/web_application.py#L17))
 
-## Azure Authentication for Operators
+## Azure Plugin
+A custom set of operators and hooks have been added under the [plugins](plugins)
+folder. Key features include:
+
+- Azure Data Factory [operator](plugins/bsh_azure/operators/azure_data_factory_operator.py)
+- Azure Data Factory [hook](plugins/bsh_azure/hooks/azure_data_factory_hook.py)
+- Azure Data Factory [sensor](plugins/bsh_azure/sensors/azure_data_factory_sensor.py)
+- Box.com [hook](plugins/bsh_azure/hooks/box_hook.py)
+- Box.com [sensor](plugins/bsh_azure/sensors/box_sensor.py)
+
+### Azure Authentication for Operators
 A json key file has been created for authentication. This enables 
 `contrib` Azure operators to connect to the tenant. To generate:
 
 1. Use az cli to login
 2. Run: `az ad sp create-for-rbac --sdk-auth > airflow.azureauth`
 
-## Box.com Authentication for BoxHook
+### Box.com Authentication for BoxHook
 A json key file has been created for authentication and loaded as secret
 [box_secret](https://github.com/shermanflan/airflow-on-aks/blob/master/k8s/az-add-aks.sh#L153)
 in AKS. This enables the custom [`BoxHook`](plugins/bsh_azure/hooks/box_hook.py) 
-to authenticae to the Box.com tenant. To re-generate the key file, follow 
+to authenticate to the Box.com tenant. To re-generate the key file, follow 
 these steps:
 
 1. Log into the box.com [developer console](https://rescare.app.box.com/developers/console)
@@ -179,7 +179,18 @@ dev/test purposes.
 - Local single-tier development (default): LocalExecutor, single host
     - [`docker-compose.yaml`](docker-compose.yml)
 - Local multi-tier template: CeleryExecutor, postgres/redis backends
-    - [`docker-compose-multi-node.yaml`](docker-compose-multi-tier.yml)
+    - [`docker-compose-multi-tier.yaml`](docker-compose-multi-tier.yml)
 - Azure Container Instances: CeleryExecutor, postgres/redis backends, 
 ACI-compatible
     - [`docker-compose-aci.yaml`](aci/docker-compose-aci.yml)
+
+### Future Enhancements
+
+- Use [git repo sync](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
+for dags
+- Use the [Kubernetes Executor](https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html) 
+in an AKS deployment
+- Implement an MS Teams operator
+- Create an airflow2 version upon release
+- Deploy using the "official" Airflow helm chart
+
