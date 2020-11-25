@@ -1,4 +1,4 @@
-# airflow-on-aks
+# Airflow on Azure Kubernetes Service
 The primary goal of this repo is to provide the necessary scripts and 
 manifests required to automate a deployment of Airflow on AKS. Key to
 this enterprise deployment is supporting TLS termination via nginx ingress 
@@ -9,7 +9,7 @@ In addition, the following additional features are included.
 - Local development via docker-compose
 - Support for Azure Container Instances
 
-## Airflow on Azure Kubernetes Service
+## Project Goals
 Key objectives include:
 
 - Deploy Airflow configured to use the Celery Executor
