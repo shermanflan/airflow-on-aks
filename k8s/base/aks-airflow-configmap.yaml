@@ -15,6 +15,7 @@ data:
     # store_serialized_dags = True
     # store_dag_code = True
     # min_serialized_dag_fetch_interval = 30
+    plugins_folder = /opt/airflow/plugins
 
     [webserver]
     dag_default_view = graph
@@ -26,6 +27,10 @@ data:
     smtp_starttls = False
     smtp_mail_from = airflow@smtp.rikguz.com
     
+    [celery]
+    broker_url = 
+    result_backend = 
+
     [kubernetes]
     airflow_configmap = airflow-configmap
     in_cluster = True
@@ -38,6 +43,6 @@ data:
     namespace = airflow-tls
     dags_volume_claim = azure-claim-dags
     dags_volume_mount_point = /opt/airflow/dags
-    dags_volume_subpath =
+    # dags_volume_subpath =
     logs_volume_claim = azure-claim-logs
     logs_volume_subpath = logs
