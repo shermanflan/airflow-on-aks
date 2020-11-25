@@ -184,7 +184,7 @@ dev/test purposes.
 ACI-compatible
     - [`docker-compose-aci.yaml`](aci/docker-compose-aci.yml)
 
-### Future Enhancements
+## Future Enhancements
 
 - Use [git repo sync](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
 for dags
