@@ -2,6 +2,7 @@
 
 from airflow import DAG
 from datetime import datetime, timedelta
+from airflow.operators.bash_operator import BashOperator
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.utils.dates import days_ago
@@ -23,11 +24,25 @@ with DAG('hello-world-k8s',
          default_args=default_args,
          start_date=days_ago(2),
          schedule_interval="@daily") as dag:
-
+    
+    print_date = BashOperator(
+        task_id='print_date',
+        bash_command="echo {{ ts }}",
+        executor_config={
+            "KubernetesExecutor": {
+                "namespace": "airflow-tls",
+                "service_account_name": "airflow-rbac",
+                "labels": {"source": "airflow"},
+                "restart_policy": "Always"
+            }
+        }
+    )
+    
     passing = KubernetesPodOperator(
         task_id="passing-task",
         name="passing-test",
-        namespace='default',
+        namespace='airflow-tls',
+        service_account_name='airflow-rbac',
         image="python:3.8-alpine",
         image_pull_policy='Always',
         cmds=["python", "-c"],
@@ -42,3 +57,5 @@ with DAG('hello-world-k8s',
         get_logs=True,
         log_events_on_failure=True
     )
+
+    print_date >> passing
