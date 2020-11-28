@@ -14,9 +14,9 @@ default_args = {
     'email': ['airflow@example.com'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 0,
-    'retry_delay': timedelta(minutes=5),
-    'queue': 'airq1',
+    'retries': 1,
+    'retry_delay': timedelta(seconds=5),
+    'queue': 'default',
     'pool': 'default_pool',
 }
 
@@ -28,19 +28,19 @@ with DAG('hello-world-k8s',
     print_date = BashOperator(
         task_id='print_date',
         bash_command="echo {{ ts }}",
-        executor_config={
-            "KubernetesExecutor": {
-                "namespace": "airflow-tls",
-                "service_account_name": "airflow-rbac",
-                "labels": {"source": "airflow"},
-                "restart_policy": "Always"
-            }
-        }
+        # executor_config={
+        #     "KubernetesExecutor": {
+        #         "namespace": "airflow-tls",
+        #         "service_account_name": "airflow-rbac",
+        #         "labels": {"source": "airflow"},
+        #         "restart_policy": "Always"
+        #     }
+        # }
     )
     
-    passing = KubernetesPodOperator(
-        task_id="passing-task",
-        name="passing-test",
+    hello_pod = KubernetesPodOperator(
+        task_id="hello_pod",
+        name="hello-pod",
         namespace='airflow-tls',
         service_account_name='airflow-rbac',
         image="python:3.8-alpine",
@@ -53,9 +53,9 @@ with DAG('hello-world-k8s',
             'limit_memory': '200Mi', 'limit_cpu': '200m'
         },
         in_cluster=True,
-        is_delete_operator_pod=False,
+        is_delete_operator_pod=True,
         get_logs=True,
         log_events_on_failure=True
     )
 
-    print_date >> passing
+    print_date >> hello_pod

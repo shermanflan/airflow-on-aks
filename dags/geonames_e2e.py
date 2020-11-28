@@ -25,7 +25,7 @@ default_args = {
     'email': ['shermanflan@gmail.com'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 0,
+    'retries': 1,
     'retry_delay': timedelta(seconds=5),
     # 'catchup': False,
     'queue': 'airq1',
@@ -50,7 +50,7 @@ default_args = {
 with DAG('geonames_e2e',
          default_args=default_args,
          description='Example using Azure ADF operator',
-         schedule_interval="@once",  # "@once",
+         schedule_interval="@once",  # "@daily",
          start_date=days_ago(1),
          tags=['azure', 'aks', 'adf'],
          ) as dag:
@@ -62,14 +62,14 @@ with DAG('geonames_e2e',
         bash_command="echo {{ ts }}",
         # Passed to PodGenerator
         # https://github.com/apache/airflow/blob/1.10.12/airflow/kubernetes/pod_generator.py
-        executor_config={
-            "KubernetesExecutor": {
-                "namespace": "airflow-tls",
-                "service_account_name": "airflow-rbac",
-                "labels": {"source": "airflow"},
-                "restart_policy": "Always"
-            }
-        }
+        # executor_config={
+        #     "KubernetesExecutor": {
+        #         "namespace": "airflow-tls",
+        #         "service_account_name": "airflow-rbac",
+        #         "labels": {"source": "airflow"},
+        #         "restart_policy": "Always"
+        #     }
+        # }
     )
 
     geonames_pod_task = KubernetesPodOperator(
@@ -103,17 +103,17 @@ with DAG('geonames_e2e',
             'limit_memory': '1Gi', 'limit_cpu': '1000m'
         },
         in_cluster=True,
-        is_delete_operator_pod=False,
-        # get_logs=True,
-        # log_events_on_failure=True
+        is_delete_operator_pod=True,
+        get_logs=True,
+        log_events_on_failure=True
     )
 
-    # geonames_adf_task = DataFactoryOperator(
-    #     task_id='geonames_adf_task',
-    #     resource_group_name='airflow-sandbox',
-    #     factory_name='bshGeonamestoASDB',
-    #     pipeline_name='LoadGeographies',
-    # )
+    geonames_adf_task = DataFactoryOperator(
+        task_id='geonames_adf_task',
+        resource_group_name='airflow-sandbox',
+        factory_name='bshGeonamestoASDB',
+        pipeline_name='LoadGeographies',
+    )
 
     # body = """
     #     Log: <a href="{{ ti.log_url }}">Link</a><br>
@@ -133,15 +133,15 @@ with DAG('geonames_e2e',
     print_date2 = BashOperator(
         task_id='print_date2',
         bash_command="echo {{ ts }}",
-        executor_config={
-            "KubernetesExecutor": {
-                "namespace": "airflow-tls",
-                "service_account_name": "airflow-rbac",
-                "labels": {"source": "airflow"},
-                "restart_policy": "Always"
-            }
-        }
+        # executor_config={
+        #     "KubernetesExecutor": {
+        #         "namespace": "airflow-tls",
+        #         "service_account_name": "airflow-rbac",
+        #         "labels": {"source": "airflow"},
+        #         "restart_policy": "Always"
+        #     }
+        # }
     )
 
-    print_date >> geonames_pod_task >> print_date2
-    # print_date >> geonames_pod_task >> geonames_adf_task >> print_date2
+    # print_date >> geonames_pod_task >> print_date2
+    print_date >> geonames_pod_task >> geonames_adf_task >> print_date2

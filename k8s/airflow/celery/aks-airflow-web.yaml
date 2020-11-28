@@ -40,6 +40,7 @@ spec:
       hostname: airflow-web
       nodeSelector:
         "beta.kubernetes.io/os": linux
+      serviceAccountName: airflow-rbac
       # Create using kubectl create secret rko.acr.io my-image-pull-secret ...
       # imagePullSecrets:
       #   - name:  my-image-pull-secret
@@ -53,6 +54,9 @@ spec:
         - name: az-init
           persistentVolumeClaim:
             claimName: azure-claim-init
+        - name: az-logs
+          persistentVolumeClaim:
+            claimName: azure-claim-logs
         - name: azure-spn
           secret:
             secretName: azure-spn-secret
@@ -69,13 +73,13 @@ spec:
           command: ['sh', '-c', "until nslookup airflow-postgres-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for airflow-postgres-service; sleep 2; done"]
           resources:
             requests:
-              cpu: "100m"
-              memory: "100Mi"
+              cpu: "50m"
+              memory: "50Mi"
             limits:
               cpu: "500m"
               memory: "500Mi"
         - name: airflow-init-db
-          image: rkoH1pVL.azurecr.io/airflow:1.10.12
+          image: rkoH1pVL.azurecr.io/airflow:1.10.13
           imagePullPolicy: Always  # IfNotPresent
           command:
               - "./scripts/airflow-init.sh"
@@ -84,6 +88,9 @@ spec:
               mountPath: "/opt/airflow/scripts"
             - name: az-init
               mountPath: "/opt/airflow/init"
+            - name: az-logs
+              mountPath: /opt/airflow/logs
+              subPath: logs
           env:
             - name: AIRFLOW__CORE__EXECUTOR
               value: "CeleryExecutor"
@@ -108,8 +115,8 @@ spec:
               memory: "1Gi"
       containers:
         - name: airflow
-          # image: rkoH1pVL.azurecr.io/airflow:1.10.12
-          image: rkoH1pVL.azurecr.io/airflow:1.10.12-united
+          image: rkoH1pVL.azurecr.io/airflow:1.10.13
+          # image: rkoH1pVL.azurecr.io/airflow:1.10.13-united
           imagePullPolicy: Always  # IfNotPresent
           command:
               - "./scripts/airflow-web-start.sh"
@@ -120,6 +127,9 @@ spec:
               mountPath: "/opt/airflow/scripts"
             - name: az-init
               mountPath: "/opt/airflow/init"
+            - name: az-logs
+              mountPath: /opt/airflow/logs
+              subPath: logs
             - name: azure-spn
               mountPath: "/opt/airflow/az-sec"
               readOnly: true
@@ -156,9 +166,9 @@ spec:
             - name: AIRFLOW__SMTP__SMTP_MAIL_FROM
               value: "airflow@smtp.rikguz.com"
             - name: AIRFLOW__WEBSERVER__RBAC
-              value: "True"
+              value: "False"
             - name: AIRFLOW__WEBSERVER__AUTHENTICATE
-              value: "True"
+              value: "False"
             - name: AZURE_TENANT_ID
               valueFrom:
                 secretKeyRef:
@@ -227,7 +237,7 @@ metadata:
     component: web
     part-of: airflow
 spec:
-  type: ClusterIP # LoadBalancer
+  type: LoadBalancer # ClusterIP
   # loadBalancerIP: 52.224.76.127
   selector:
     # Load balance traffic across Pods matching
@@ -247,8 +257,8 @@ spec:
       port: 5555
       # targetPort: 5555
   # externalTrafficPolicy: Local  # Maintain client IP
-  # loadBalancerSourceRanges:
-  #   - "136.49.2.8/32"
+  loadBalancerSourceRanges:
+    - "136.49.2.8/32"
 # ---
 # apiVersion: autoscaling/v1
 # kind: HorizontalPodAutoscaler

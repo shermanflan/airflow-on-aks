@@ -58,11 +58,11 @@ az aks create \
     --resource-group $RESOURCE_GROUP \
     --location $LOCATION \
     --name $K8S_CLUSTER \
-    --node-count 3 \
     --kubernetes-version $K8S_VERSION \
     --load-balancer-sku Standard \
     --outbound-type loadBalancer \
     --network-plugin kubenet \
+    --node-count 3 \
     --node-vm-size Standard_DS3_v2 \
     --vm-set-type VirtualMachineScaleSets \
     --zones 1 2 3 \
@@ -70,7 +70,7 @@ az aks create \
     --attach-acr $REGISTRY \
     --enable-addons monitoring \
     --workspace-resource-id "${WORKSPACE_ID}"
-    
+
     # --disable-rbac
     # --debug
     # --dns-name-prefix condesa \

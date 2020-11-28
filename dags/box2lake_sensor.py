@@ -30,9 +30,9 @@ default_args = {
     'email': ['shermanflan@gmail.com'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 0,
+    'retries': 1,
     'retry_delay': timedelta(seconds=5),
-    'queue': 'airq1',
+    'queue': 'airq2',
     'catchup': False,
     # 'pool': 'backfill',
     # 'priority_weight': 10,
@@ -64,7 +64,7 @@ with DAG('box2lake_sensor',
         box_item_path='Utilization Reports/Daily Schedule Status Reports/2020 Reports/11-November/Branch Scheduled Hours Breakdown_11_15_2020.xlsx',
         box_item_type=BoxItemType.FILE,
         poke_interval=5,
-        timeout=300,
+        timeout=600,
         mode='poke'
     )
 
@@ -118,8 +118,7 @@ with DAG('box2lake_sensor',
             'limit_memory': '2Gi', 'limit_cpu': '2000m'
         },
         in_cluster=True,
-        # cluster_context='',
-        is_delete_operator_pod=False,
+        is_delete_operator_pod=True,
         get_logs=True,
         log_events_on_failure=True
         # config_file='/opt/airflow/dags/config/kube.config',
