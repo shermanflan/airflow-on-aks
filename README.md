@@ -29,23 +29,41 @@ are required.
 
 1. An Azure account with access to the az cli
 2. If using tls-termination and OAuth2, then a DNS zone is necessary
-along with a registered domain
+preferably with a registered domain
 3. A storage account for hosting Airflow volumes as Azure file systems
 4. An Application Registration in Azure Active Directory for OAuth2
 
 ## Airflow on AKS using Celery
-The manifests under [k8s/airflow](k8s/airflow) define an Airflow configuration 
-using the Celery Executor. In addition, various volume claims are defined 
-in [k8s/base](k8s/base). The volumes are configured against an Azure File
-Share to store dags and initialization scripts. Next, an nginx 
-ingress is defined under [k8s/ingress-nginx](k8s/ingress-nginx/aks-airflow-ingress-tls.yaml),
-configured with tls termination. Automated certificate generation is 
-configured against the [Let's Encrypt](https://cert-manager.io/docs/tutorials/acme/ingress/)
-issuer using the manifests under [k8s/cert-manager](k8s/cert-manager).
-Finally, the Airflow image used by the manifests is a customized version 
-configured with RBAC and OAuth2 using version 1.10.2 as a baseline. It is 
-baked with a modified [webserver_config.py](bootstrap/webserver_config.py) 
-file. For full details, refer to the [Dockerfile](./Dockerfile).
+A working version of Airflow 1.10.13 has been configured to run under the
+Azure Kubernetes Service in `CeleryExecutor` mode.
+
+1. The manifests under [k8s](k8s) together define an Airflow configuration 
+using the Celery Executor
+2. Volume claims are defined in [k8s/base](k8s/base). 4 [volumes](k8s/base/aks-volumes.yaml) 
+are configured against an Azure File Share as follows.
+    - Store dags under volume `azure-file-dags`
+    - Store initialization scripts under volume `azure-file-scripts`
+    - Store a database initialization indicator under volume `az-file-init`
+    - Store logs under volume `azure-file-logs`
+3. An nginx ingress is defined under [k8s/ingress-nginx](k8s/ingress-nginx/aks-airflow-ingress-tls.yaml),
+configured with tls termination. 
+4. Automated certificate generation is configured against the 
+[Let's Encrypt](https://cert-manager.io/docs/tutorials/acme/ingress/)
+issuer using the manifests under [k8s/cert-manager](k8s/cert-manager)
+5. The Airflow image used by the manifests is a pre-baked version 
+configured with RBAC and OAuth2 using a modified 
+[webserver_config.py](bootstrap/webserver_config.py) 
+file. See the [Dockerfile](./Dockerfile).
+6. The K8s cluster is configured with RBAC. As such, a highly privileged
+service account and cluster role [binding](k8s/airflow/aks-airflow-rbac.yaml) 
+have been defined for the Airflow web server, scheduler, and workers. For
+production, using more fine-grained access controls may be more suitable.
+7. In order to simplify configuration management, the manifests for the 
+airflow webserver, scheduler, and workers refer to a [configuration map](k8s/airflow/celery/aks-airflow-configmap.yaml)
+8. As this is a test configuration, both [postgreSQL](k8s/airflow/aks-postgres.yaml) 
+and [redis](k8s/airflow/aks-redis.yaml) 
+deployments have been defined as cluster services. For production, these 
+would probably be deployed as services outside the cluster using PaaS.
 
 ### Deployment
 Assuming all of the pre-requisites are satisfied, the Airflow deployment can
@@ -67,7 +85,7 @@ controller
 6. To delete the cluster, run the [`aks-drop.sh`](k8s/az-drop-aks.sh)
 script
 
-### [RBAC](https://github.com/rolanddb/airflow-on-kubernetes/blob/master/README.md#rbac)
+## [RBAC](https://github.com/rolanddb/airflow-on-kubernetes/blob/master/README.md#rbac)
 "If your cluster has [RBAC](https://kubernetes.io/docs/admin/authorization/rbac/) 
 turned on, and you want to launch Pods from Airflow, you will need to bind 
 the appropriate roles to the serviceAccount of the Pod that wants to schedule 

@@ -91,21 +91,9 @@ spec:
             - name: az-logs
               mountPath: /opt/airflow/logs
               subPath: logs
-          env:
-            - name: AIRFLOW__CORE__EXECUTOR
-              value: "CeleryExecutor"
-            - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-service/airflow"
-            - name: AIRFLOW__CELERY__BROKER_URL
-              value: "redis://airflow-redis-service:6379/0"
-            - name: AIRFLOW__CELERY__RESULT_BACKEND
-              value: "db+postgresql://sa:pwd@airflow-postgres-service/airflow"
-            - name: AIRFLOW__CORE__FERNET_KEY
-              value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
-            - name: AIRFLOW__WEBSERVER__RBAC
-              value: "True"
-            - name: AIRFLOW__WEBSERVER__AUTHENTICATE
-              value: "True"
+          envFrom:
+          - configMapRef:
+              name: airflow-configmap
           resources:
             requests:
               cpu: "100m"
@@ -139,36 +127,6 @@ spec:
             # - name: "config"
             #   mountPath: "/data/my-config"
           env:
-            - name: AIRFLOW__WEBSERVER__DAG_DEFAULT_VIEW
-              value: "graph"
-            - name: AIRFLOW__CORE__LOGGING_LEVEL
-              value: "INFO"
-            - name: AIRFLOW__CORE__EXECUTOR
-              value: "CeleryExecutor"
-            - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-              value: "postgresql+psycopg2://sa:pwd@airflow-postgres-service/airflow"
-            - name: AIRFLOW__CELERY__BROKER_URL
-              value: "redis://airflow-redis-service:6379/0"
-            - name: AIRFLOW__CELERY__RESULT_BACKEND
-              value: "db+postgresql://sa:pwd@airflow-postgres-service/airflow"
-            - name: AIRFLOW__CORE__FERNET_KEY
-              value: "kLtLiPlyj8qyGolY_FB2CiRu1oNyX_ullQ2Q9KYb3wc="
-            - name: AIRFLOW_CORE_STORE_SERIALIZED_DAGS
-              value: "True"
-            - name: AIRFLOW_CORE_STORE_DAG_CODE
-              value: "True"
-            - name: AIRFLOW_CORE_MIN_SERIALIZED_DAG_FETCH_INTERVAL
-              value: "30"
-            - name: AIRFLOW__SMTP__SMTP_HOST
-              value: "airflow-smtp-svc"
-            - name: AIRFLOW__SMTP__SMTP_STARTTLS
-              value: "False"
-            - name: AIRFLOW__SMTP__SMTP_MAIL_FROM
-              value: "airflow@smtp.rikguz.com"
-            - name: AIRFLOW__WEBSERVER__RBAC
-              value: "False"
-            - name: AIRFLOW__WEBSERVER__AUTHENTICATE
-              value: "False"
             - name: AZURE_TENANT_ID
               valueFrom:
                 secretKeyRef:
@@ -193,6 +151,9 @@ spec:
             #     configMapKeyRef:
             #       name: my-config
             #       key: another-param
+          envFrom:
+          - configMapRef:
+              name: airflow-configmap
           resources:
             requests:
               cpu: "1200m"
