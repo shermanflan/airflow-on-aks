@@ -211,4 +211,4 @@ in an AKS deployment
 - Implement an MS Teams operator
 - Create an airflow2 version upon release
 - Deploy using the "official" Airflow helm chart
-
+- Define readiness probes for the web server and scheduler
