@@ -13,7 +13,6 @@ In addition, the following additional features are included.
 Key objectives include:
 
 - Deploy Airflow configured to use the Celery Executor
-- Deploy Airflow configured to use the Kubernetes Executor
 - Use the nginx [ingress](https://docs.microsoft.com/en-us/azure/aks/ingress-tls) 
 with tls termination provided by the managed helm chart
 - Enable certificate management using the [cert-mgr](https://cert-manager.io/docs/installation/kubernetes/) 
@@ -204,6 +203,7 @@ ACI-compatible
 
 ## Future Enhancements
 
+- Use Airflow-recommended external log setup for [Azure](https://airflow.apache.org/docs/stable/howto/write-logs.html#writing-logs-to-azure-blob-storage)
 - Use [git repo sync](https://docs.bitnami.com/azure-templates/infrastructure/apache-airflow/configuration/sync-dags/)
 for dags
 - Use the [Kubernetes Executor](https://airflow.readthedocs.io/en/1.10.12/executor/kubernetes.html) 
@@ -211,4 +211,8 @@ in an AKS deployment
 - Implement an MS Teams operator
 - Create an airflow2 version upon release
 - Deploy using the "official" Airflow helm chart
+    - [Astronomer](https://github.com/astronomer/airflow-chart)
+    - [Apache Airflow](https://github.com/apache/airflow/tree/1.10.13/chart)
 - Define readiness probes for the web server and scheduler
+    - Start with this example from [astronomer.io](https://github.com/astronomer/airflow-chart/blob/master/templates/scheduler/scheduler-deployment.yaml#L98)
+    - Similar example from official [Airflow](https://github.com/apache/airflow/blob/1.10.13/chart/templates/scheduler/scheduler-deployment.yaml#L112)
