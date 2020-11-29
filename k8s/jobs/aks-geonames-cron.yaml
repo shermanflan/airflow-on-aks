@@ -49,6 +49,8 @@ spec:
                   value: "rko.aks.geonames2lake.dev"
                 - name: LOG_LEVEL
                   value: "DEBUG"
+                - name: ON_QUEUE
+                  value: "False"
                 - name: CENSUS_STATES_URI
                   value: "https://www2.census.gov/programs-surveys/popest/geographies/2019/state-geocodes-v2019.xlsx"
                 - name: CENSUS_COUNTIES_URI

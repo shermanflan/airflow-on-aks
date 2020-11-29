@@ -133,6 +133,12 @@ kubectl create secret generic \
     --from-literal=azurestorageaccountname=$AKS_PERS_STORAGE_ACCOUNT_NAME \
     --from-literal=azurestorageaccountkey=$STORAGE_KEY
 
+echo "Creating Azure queue connection secret for $AKS_PERS_STORAGE_ACCOUNT_NAME"
+kubectl create secret generic \
+    az-queue-secret \
+    -n ${INGRESS_NS} \
+    --from-literal=azure-queue-connectionstring=$QUEUE_CONNECTION_STRING
+
 echo "Creating Azure OAuth secrets for tenant $AZURE_TENANT_ID"
 kubectl create secret generic \
     az-oauth-secret \

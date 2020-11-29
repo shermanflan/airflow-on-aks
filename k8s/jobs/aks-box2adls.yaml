@@ -10,11 +10,11 @@ metadata:
     component: batch
     part-of: jobs
 spec:
-  activeDeadlineSeconds: 1800 # 30 min
-  ttlSecondsAfterFinished: 180
-  backoffLimit: 4
-  completions: 1
-  parallelism: 1
+  activeDeadlineSeconds: 1800  # must finish before this (30 min)
+  ttlSecondsAfterFinished: 180  # after completed deleted (3 min)
+  backoffLimit: 4  # retries (up to 6)
+  completions: 1  # if none, then first completion signals success
+  parallelism: 1  # 1 to many instances, only 1 if completions set to 1
   template:
     metadata:
       labels:

@@ -10,11 +10,11 @@ metadata:
     component: batch
     part-of: jobs
 spec:
-  activeDeadlineSeconds: 1800
-  ttlSecondsAfterFinished: 180
-  backoffLimit: 3
-  completions: 1
-  parallelism: 1
+  activeDeadlineSeconds: 1800  # must finish before this (30 min)
+  ttlSecondsAfterFinished: 180  # deleted after this (3 min)
+  backoffLimit: 3  # retries (up to 6)
+  completions: 10  # if none, then first completion signals success
+  parallelism: 10  # 1 to many instances, only 1 if completions set to 1
   template:
     metadata:
       labels:
@@ -58,6 +58,10 @@ spec:
               value: "rko.aks.geonames2lake.dev"
             - name: LOG_LEVEL
               value: "DEBUG"
+            - name: ON_QUEUE
+              value: "True"
+            - name: QUEUE_NAME
+              value: "geonames-tasks"
             - name: CENSUS_STATES_URI
               value: "https://www2.census.gov/programs-surveys/popest/geographies/2019/state-geocodes-v2019.xlsx"
             - name: CENSUS_COUNTIES_URI
@@ -77,6 +81,11 @@ spec:
                 secretKeyRef:
                   name: az-file-secret
                   key: azurestorageaccountkey
+            - name: STORE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: az-queue-secret
+                  key: azure-queue-connectionstring
             - name: LAKE_CONTAINER_NAME
               value: "enterprisedata"
             - name: LAKE_BASE_PATH

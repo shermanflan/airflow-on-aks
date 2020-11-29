@@ -2,18 +2,6 @@
 
 declare RANDOM_PWD=$(openssl rand -base64 8)
 
-echo "Publishing ${IMAGE} to ${REGISTRY}"
-docker push $REGISTRY.azurecr.io/$IMAGE
-
-echo "Publishing ${IMAGE2} to ${REGISTRY}"
-docker push $REGISTRY.azurecr.io/${IMAGE2}
-
-echo "Publishing ${IMAGE3} to ${REGISTRY}"
-docker push $REGISTRY.azurecr.io/${IMAGE3}
-
-echo "Publishing ${IMAGE4} to ${REGISTRY}"
-docker push $REGISTRY.azurecr.io/${IMAGE4}
-
 # TEST:
 # Use ping: kubectl run curl --image=radial/busyboxplus:curl -i --tty
 
