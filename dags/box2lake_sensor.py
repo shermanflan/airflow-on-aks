@@ -32,6 +32,7 @@ default_args = {
     'email_on_retry': False,
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
+    # 'retry_exponential_backoff': True,
     'queue': 'airq2',
     'catchup': False,
     # 'pool': 'backfill',
