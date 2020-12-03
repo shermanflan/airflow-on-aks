@@ -31,7 +31,6 @@ echo "Creating airflow"
 
 kubectl apply -f ${K8S_HOME}/airflow/celery/
 
-echo "Creating certificate issuers and tls ingress"
-
-kubectl apply -f ${K8S_HOME}/cert-manager/
-kubectl apply -f ${K8S_HOME}/ingress-nginx/aks-airflow-ingress-tls.yaml
+# echo "Creating certificate issuers and tls ingress"
+# kubectl apply -f ${K8S_HOME}/cert-manager/
+# kubectl apply -f ${K8S_HOME}/ingress-nginx/aks-airflow-ingress-tls.yaml

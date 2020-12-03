@@ -91,7 +91,7 @@ spec:
             - name: LAKE_CONTAINER_NAME
               value: "enterprisedata"
             - name: LAKE_BASE_PATH
-              value: "Raw/MasterData/Geography/Brightspring"
+              value: "Raw/Master Data/Geography/Brightspring"
           resources:
             requests:
               cpu: "500m"
