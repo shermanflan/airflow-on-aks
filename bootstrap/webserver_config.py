@@ -40,7 +40,7 @@ WTF_CSRF_ENABLED = True
 # for details.
 
 # The authentication type
-AUTH_TYPE = AUTH_OAUTH  #AUTH_DB
+AUTH_TYPE = AUTH_DB  # AUTH_OAUTH
 
 # Uncomment to setup Full admin role name
 # AUTH_ROLE_ADMIN = 'Admin'

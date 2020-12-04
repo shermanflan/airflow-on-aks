@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare K8S_HOME=~/personal/github/airflow-local/k8s
+declare K8S_HOME=~/personal/github/airflow-on-aks/k8s
 declare EXISTS=$(az storage file exists \
                     --account-name ${AKS_PERS_STORAGE_ACCOUNT_NAME} \
                     --account-key ${STORAGE_KEY} \

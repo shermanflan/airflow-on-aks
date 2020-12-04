@@ -26,20 +26,20 @@ if [ ! -f $INIT_FILE ]
 
     airflow pool -s utility_pool 32 "For email, teams, etc."
 
-#    if [ "$AIRFLOW__WEBSERVER__RBAC" == "True" ]
-#      then
-#
-#        echo 'Adding admin users for RBAC...'
-#
-#        airflow create_user \
-#          --role="Admin" \
-#          --username="ricardo.guzman@brightspringhealth.com" \
-#          --email="ricardo.guzman@brightspringhealth.com" \
-#          --firstname="Ricardo" \
-#          --lastname="Guzman" \
-#          --password="pwd"
-#
-#    fi
+   if [ "$AIRFLOW__WEBSERVER__RBAC" == "True" ]
+     then
+
+       echo 'Adding admin users for RBAC...'
+
+       airflow create_user \
+         --role="Admin" \
+         --username="rick.guzman" \
+         --email="ricardo.guzman@brightspringhealth.com" \
+         --firstname="Ricardo" \
+         --lastname="Guzman" \
+         --password="pwd"
+
+   fi
 
     touch $INIT_FILE
 fi
