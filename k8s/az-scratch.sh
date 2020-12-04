@@ -2,6 +2,8 @@
 
 declare RANDOM_PWD=$(openssl rand -base64 8)
 
+# az aks get-credentials --name k8s-poc-r5o --resource-group k8s-demo
+
 # TEST:
 # Use ping: kubectl run curl --image=radial/busyboxplus:curl -i --tty
 

@@ -15,8 +15,8 @@ spec:
   backoffLimit: 3  # retries (up to 6), uses exponential back-off (10s, 20s, 40s, ...300s)
   # See https://kubernetes.io/docs/concepts/workloads/controllers/job/#parallel-jobs
   # See https://kubernetes.io/docs/concepts/workloads/controllers/job/#job-patterns
-  # completions: 10  # if none, then first completion signals success
-  parallelism: 10  # 1 to many instances, only 1 if completions set to 1
+  completions: 10  # if none, then first completion signals success
+  parallelism: 5  # 1 to many instances, only 1 if completions set to 1
   template:
     metadata:
       labels:
