@@ -60,7 +60,7 @@ spec:
               memory: "500Mi"
       containers:
         - name: airflow
-          image: rkoH1pVL.azurecr.io/airflow:1.10.13
+          image: rkoH1pVL.azurecr.io/airflow:1.10.14
           imagePullPolicy: Always  # IfNotPresent
           command:
               - "./scripts/airflow-scheduler-start.sh"
@@ -83,8 +83,8 @@ spec:
               name: airflow-configmap
           resources:
             requests:
-              cpu: "500m"
-              memory: "1024Mi"
+              cpu: "1000m"
+              memory: "2048Mi"
             limits:
               cpu: "4000m"
               memory: "4Gi"

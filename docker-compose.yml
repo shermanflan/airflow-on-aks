@@ -25,8 +25,10 @@ services:
             - AIRFLOW__WEBSERVER__RBAC=False
             # - AIRFLOW__API__AUTH_BACKEND=airflow.api.auth.backend.deny_all
             # - AIRFLOW__WEBSERVER__RELOAD_ON_PLUGIN_CHANGE=True
+            - AZURE_AUTH_LOCATION=/opt/airflow/init/azure_eyes_only_auth.json
+            - BOX_AUTH_LOCATION=/opt/airflow/init/box_eyes_only_config.json
         volumes:
             - ~/personal/github/airflow-on-aks/dags:/opt/airflow/dags
             - ~/personal/github/airflow-on-aks/bootstrap:/opt/airflow/scripts
             - ~/personal/github/airflow-on-aks/plugins:/opt/airflow/plugins
-#            - ~/personal/github/airflow-on-aks/bootstrap/metadata:/opt/airflow/init
+            - ~/personal/github/airflow-on-aks/bootstrap/metadata:/opt/airflow/init

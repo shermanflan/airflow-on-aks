@@ -53,12 +53,22 @@ class DataFactoryOperator(BaseOperator):
         self.log.info("Getting data factory hook.")
         self._adf_hook = AzureDataFactoryHook(self.adf_conn_id)
 
+        self.log.info(f"Pull previous task id's return value.")
+        run_id_prev = context['ti'].xcom_pull()
+        self.log.info(f"Previous run id: {run_id_prev}")
+
+        self.log.info(f"Pull all previous task id's return value.")
+        run_id_prevs = context['ti'].xcom_pull(include_prior_dates=True)
+        self.log.info(f"All previous run id: {run_id_prevs}")
+
         self.log.info(f"Creating {self.pipeline_name} pipeline run.")
         run_response = self._adf_hook.create_run(
             self.resource_group_name,
             self.factory_name,
             self.pipeline_name
         )
+
+        self.log.info(f"Current run id: {run_response.run_id}")
 
         if self.no_wait:
             # TODO: Set XCom with run_id

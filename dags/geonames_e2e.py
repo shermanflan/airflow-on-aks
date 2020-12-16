@@ -1,6 +1,6 @@
 """
 ## geonames_e2e.py
-Example using Azure operators for ADF and AKS.
+Example using Box.com sensors along with Azure operators for ADF and AKS.
 
 - Code inspired by [contrib repo](https://github.com/apache/airflow/tree/1.10.12/airflow/contrib).
 """
@@ -18,6 +18,7 @@ from airflow.utils.dates import days_ago
 from bsh_azure.operators.azure_data_factory_operator import (
     DataFactoryOperator
 )
+from bsh_azure.sensors.box_sensor import BoxSensor, BoxItemType
 
 default_args = {
     'owner': 'airflow',
@@ -28,7 +29,6 @@ default_args = {
     'retries': 1,
     'retry_delay': timedelta(seconds=5),
     # 'retry_exponential_backoff': True,
-    # 'catchup': False,
     'queue': 'airq1',
     'pool': 'default_pool',
     # 'priority_weight': 10,
@@ -51,26 +51,47 @@ default_args = {
 with DAG('geonames_e2e',
          default_args=default_args,
          description='Example using Azure ADF operator',
-         schedule_interval="@once",  # "@daily",
-         start_date=days_ago(1),
-         tags=['azure', 'aks', 'adf'],
+         tags=['azure', 'aks', 'adf', 'demo'],
+         # Cron presets
+         # '@once': None
+         # '@hourly': '0 * * * *'
+         # '@daily': '0 0 * * *'
+         # '@weekly': '0 0 * * 0'
+         # '@monthly': '0 0 1 * *'
+         # '@quarterly': '0 0 1 */3 *'
+         # '@yearly': '0 0 1 1 *'
+         schedule_interval="@daily",
+         start_date=days_ago(3),
+         catchup=False
          ) as dag:
 
     dag.doc_md = __doc__
 
-    print_date = BashOperator(
-        task_id='print_date',
-        bash_command="echo {{ ts }}",
-        # Passed to PodGenerator
-        # https://github.com/apache/airflow/blob/1.10.12/airflow/kubernetes/pod_generator.py
-        # executor_config={
-        #     "KubernetesExecutor": {
-        #         "namespace": "airflow-tls",
-        #         "service_account_name": "airflow-rbac",
-        #         "labels": {"source": "airflow"},
-        #         "restart_policy": "Always"
-        #     }
-        # }
+    wait_for_box_daily = BoxSensor(
+        task_id='wait_for_daily_box_task',
+        box_item_path='data_source_01/folder_1/2020/20-August/PastaBologneseRecipe.pdf',
+        box_item_type=BoxItemType.FILE,
+        poke_interval=5,
+        timeout=600,
+        mode='poke'
+    )
+
+    wait_for_box_weekly = BoxSensor(
+        task_id='wait_for_weekly_box_task',
+        box_item_path='data_source_01/folder_1/2020/20-August/BeefStewRecipe.pdf',
+        box_item_type=BoxItemType.FILE,
+        poke_interval=5,
+        timeout=300,
+        mode='poke'
+    )
+
+    wait_for_box_monthly = BoxSensor(
+        task_id='wait_for_monthly_box_task',
+        box_item_path='data_source_01/folder_1/2020/20-August/Split_RoastedChicken.pdf',
+        box_item_type=BoxItemType.FILE,
+        poke_interval=5,
+        timeout=300,
+        mode='poke'
     )
 
     geonames_pod_task = KubernetesPodOperator(
@@ -113,8 +134,8 @@ with DAG('geonames_e2e',
     geonames_adf_task = DataFactoryOperator(
         task_id='geonames_adf_task',
         resource_group_name='airflow-sandbox',
-        factory_name='bshGeonamestoASDB',
-        pipeline_name='LoadGeographies',
+        factory_name='GeonamesADLStoASDB',
+        pipeline_name='MasterEntrypoint',
     )
 
     # body = """
@@ -132,18 +153,7 @@ with DAG('geonames_e2e',
     #     pool='utility_pool',
     # )
 
-    print_date2 = BashOperator(
-        task_id='print_date2',
-        bash_command="echo {{ ts }}",
-        # executor_config={
-        #     "KubernetesExecutor": {
-        #         "namespace": "airflow-tls",
-        #         "service_account_name": "airflow-rbac",
-        #         "labels": {"source": "airflow"},
-        #         "restart_policy": "Always"
-        #     }
-        # }
-    )
-
     # print_date >> geonames_pod_task >> print_date2
-    print_date >> geonames_pod_task >> geonames_adf_task >> print_date2
+    # print_date >> geonames_pod_task >> geonames_adf_task >> print_date2
+    [wait_for_box_daily, wait_for_box_weekly, wait_for_box_monthly] >> geonames_pod_task
+    geonames_pod_task >> geonames_adf_task

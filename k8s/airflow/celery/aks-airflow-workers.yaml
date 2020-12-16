@@ -58,7 +58,7 @@ spec:
               memory: "500Mi"
       containers:
         - name: airflow
-          image: rkoH1pVL.azurecr.io/airflow:1.10.13
+          image: rkoH1pVL.azurecr.io/airflow:1.10.14
           imagePullPolicy: Always  # IfNotPresent
           command:
               - "airflow"
